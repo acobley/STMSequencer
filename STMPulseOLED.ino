@@ -45,10 +45,17 @@ void LedOn() {
   Cursor(10, 0);
   Erase(10, 0, 10 + 8 * 3, 0+ 8);
   Print(count);
-  Refresh();
+  Cursor(8*count,26+9);
+  _DrawMode=CLEAR;
+  Print('_');
+  
   count++;
   if (count >= countlength)
     count = 0;
+  Cursor(8*count,26+9);
+  _DrawMode=NORMAL;
+  Print('_');
+  Refresh();
 }
 
 
