@@ -45,16 +45,16 @@ void LedOn() {
   Cursor(10, 0);
   Erase(10, 0, 10 + 8 * 3, 0+ 8);
   Print(count);
-  Cursor(8*count,26+9);
+  Cursor(9*count,26+10);
   _DrawMode=CLEAR;
-  Print('_');
+  _WriteChar('_'-32);
   
   count++;
   if (count >= countlength)
     count = 0;
-  Cursor(8*count,26+9);
+  Cursor(9*count,26+10);
   _DrawMode=NORMAL;
-  Print('_');
+  _WriteChar('_'-32);
   Refresh();
 }
 
@@ -165,13 +165,6 @@ void DisplayBackground(){
    Line(CX-1,CY,CX-1,CY+Height+1);
    Line(CX-1,CY+Height+1,78,CY+Height+1);
    Line(1+CX + Width * 3,0,1+CX + Width * 3,CY+Height+1);
-
-   Cursor(0,26);
-   
-   _WriteChar('~'-32+1);
-   _WriteChar('~'-32+2);
-   _WriteChar('~'-32+3);
-   _WriteChar('~'-32+4);
    int i=0;
    Cursor(0,26+9);
    for (i=0;i<countlength;i++){
