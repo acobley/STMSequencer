@@ -24,37 +24,48 @@
 #include "fonts.h"
 
 
-int Tempo = 120;
+HardwareTimer SequenceTimer(1);
+HardwareTimer SequenceGateTimer(2);
+HardwareTimer BeatTimer(3);
+HardwareTimer BeatGateTimer(4);
+
+
+int Tempo = 10;
 float fTime = 1.0 / (Tempo / 60);
 long BaseTime = 1000000 * 60/Tempo;
 long GateTime = 1000000 * 60 /Tempo;
-short Timers[] = {3, 3, 3, 2, 2, 1, 4,4, 2};
+short Timers[] = {3, 3, 3, 2, 2, 1, 1};
+short BeatPos[]={0,3,5,6};
 int count = 0;
-int Beat = 0;
-int countlength = 9;
+int Beat = 1;
+int countlength = 7;
 int Gate = PB5;
+int ErasePos=0;
 
 void LedOn() {
   digitalWrite(LED_BUILTIN, true);
   long Time = (long)(BaseTime / Timers[count]);
-  Timer1.setPeriod(Time);
-  Timer1.setCount(0);
-  Timer2.setCount(0);
-  Timer2.resume();
-  Timer1.resume();
+  SequenceTimer.setPeriod(Time);
+  SequenceTimer.setCount(0);
+  SequenceGateTimer.setCount(0);
+  SequenceGateTimer.resume();
+  SequenceTimer.resume();
   Cursor(10, 0);
   Erase(10, 0, 10 + 8 * 3, 0+ 8);
-  Print(count);
-  Cursor(9*count,26+10);
-  _DrawMode=CLEAR;
-  _WriteChar('_'-32);
-  
-  count++;
-  if (count >= countlength)
-    count = 0;
+  Print(count+1);
   Cursor(9*count,26+10);
   _DrawMode=NORMAL;
   _WriteChar('_'-32);
+  ErasePos=count-1;
+  if (ErasePos<0)
+     ErasePos=countlength-1;
+  Cursor(9*ErasePos,26+10);
+  _DrawMode=CLEAR;
+  _WriteChar('_'-32);   
+  count++;
+  if (count >= countlength)
+    count = 0;
+  
   Refresh();
 }
 
@@ -62,27 +73,41 @@ void LedOn() {
 void GateOn() {
   digitalWrite(Gate, true);
 
-  Timer3.setPeriod(GateTime);
-  Timer3.setCount(0);
-  Timer4.setCount(0);
-  Timer4.resume();
-  Timer3.resume();
+  BeatTimer.setPeriod(GateTime);
+  BeatTimer.setCount(0);
+  BeatGateTimer.setCount(0);
+  BeatGateTimer.resume();
+  BeatTimer.resume();
   Cursor(15 * 8, 0);
   Erase(15* 8, 0, 15 * 8 + 8 * 3, 0 + 8);
   Print(Beat);
   Refresh();
+  Cursor(9*BeatPos[Beat-1],26+12);
+  _DrawMode=NORMAL;
+  _WriteChar('_'-32);
+
+  ErasePos=Beat-2;
+  if (ErasePos<0)
+     ErasePos=3;
+
+  Cursor(9*BeatPos[ErasePos-1],26+12);
+  _DrawMode=CLEAR;
+  _WriteChar('_'-32);
+  Refresh();  
   Beat++;
   if (Beat > 4)
     Beat = 1;
+  
+ 
 }
 
 void GateOff() {
-  Timer4.pause();
+  BeatGateTimer.pause();
   digitalWrite(Gate, false);
 
 }
 void LedOff() {
-  Timer2.pause();
+  SequenceGateTimer.pause();
   digitalWrite(LED_BUILTIN, false);
 
 }
@@ -132,19 +157,19 @@ void SetupOLED() {
 void setup() {
   pinMode(Gate, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  Timer2.setPeriod(0015000);
-  Timer3.setPeriod(GateTime);
-  Timer4.setPeriod(0015000);
-  Timer1.attachInterrupt(0, LedOn);
-  Timer2.attachInterrupt(0, LedOff);
-  Timer3.attachInterrupt(0, GateOn);
-  Timer4.attachInterrupt(0, GateOff);
-  Timer2.pause();
-  Timer4.pause();
-  Timer1.setCount(0);
-  Timer1.pause();
-  Timer3.setCount(0);
-  Timer3.pause();
+  SequenceGateTimer.setPeriod(0015000);
+  BeatTimer.setPeriod(GateTime);
+  BeatGateTimer.setPeriod(0015000);
+  SequenceTimer.attachInterrupt(0, LedOn);
+  SequenceGateTimer.attachInterrupt(0, LedOff);
+  BeatTimer.attachInterrupt(0, GateOn);
+  BeatGateTimer.attachInterrupt(0, GateOff);
+  SequenceGateTimer.pause();
+  BeatGateTimer.pause();
+  SequenceTimer.setCount(0);
+  SequenceTimer.pause();
+  BeatTimer.setCount(0);
+  BeatTimer.pause();
   SetupOLED();
   LedOn();
   GateOn();
