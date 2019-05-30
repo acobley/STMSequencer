@@ -19,9 +19,20 @@
 
 
 */
+
+
 #include "HardwareTimer.h"
 #include "SPI.h"
 #include "fonts.h"
+
+//SW
+#define sw 5 //9
+
+//Encoder
+#define encA PB0 //11
+#define encB PB1 //10
+
+int encAVal, encALast, encBVal;
 
 
 HardwareTimer SequenceTimer(1);
@@ -30,44 +41,49 @@ HardwareTimer BeatTimer(3);
 HardwareTimer BeatGateTimer(4);
 
 
-int Tempo = 60;
-long BaseTime = 1000000L * 60/Tempo;
-long BeatGateTime = 1000000L * 60 /Tempo;
-short Timers[] = {3, 3, 3, 2, 2, 1, 1};
-short BeatPos[]={0,3,5,6};
+int Tempo = 121;
+long BaseTime = 1000000L * 60 / Tempo;
+long BeatGateTime = 1000000L * 60 / Tempo;
+short Timers[] = {3, 3, 3, 2, 2, 1, 1,2,2,2,2,1,1};
+short BeatPos[] = {0, 3, 5, 6,7,9,11,12,13};
 int count = 0;
 int Beat = 1;
-int countlength = 7;
+int MaxBeat=8;
+int countlength = 13;
 int Gate = PB5;
-int ErasePos=0;
+int ErasePos = 0;
+short encPos = Tempo;
+short NewEncPos = Tempo;
+
+int DACS[2] = {PB6, PB7};
 
 void SequenceGateOn() {
   digitalWrite(LED_BUILTIN, true);
   long Time = (long)(BaseTime / Timers[count]);
   SequenceTimer.setPeriod(Time);
   SequenceTimer.refresh();
-  SequenceTimer.resume();  
+  SequenceTimer.resume();
   SequenceGateTimer.refresh();
   SequenceGateTimer.resume();
-  
-  
-  
+
+
+
   Cursor(10, 0);
-  Erase(10, 0, 10 + 8 * 3, 0+ 8);
-  Print(count+1);
-  Cursor(9*count,22);
+  Erase(10, 0, 10 + 8 * 3, 0 + 8);
+  Print(count + 1);
+  Cursor(9 * count, 22);
   DrawMode(NORMAL);
-  _WriteChar('_'-32);
-  ErasePos=count-1;
-  if (ErasePos<0)
-     ErasePos=countlength-1;
-  Cursor(9*ErasePos,22);
+  _WriteChar('_' - 32);
+  ErasePos = count - 1;
+  if (ErasePos < 0)
+    ErasePos = countlength - 1;
+  Cursor(9 * ErasePos, 22);
   DrawMode(CLEAR);
-  _WriteChar('_'-32);   
+  _WriteChar('_' - 32);
   count++;
   if (count >= countlength)
     count = 0;
-  
+
   Refresh();
 }
 
@@ -80,29 +96,29 @@ void BeatGateOn() {
   BeatGateTimer.refresh();
   BeatGateTimer.resume();
   BeatTimer.resume();
-  
+
   Cursor(15 * 8, 0);
-  Erase(15* 8, 0, 15 * 8 + 8 * 3, 0 + 8);
+  Erase(15 * 8, 0, 15 * 8 + 8 * 3, 0 + 8);
   Print(Beat);
-  
-  Cursor(9*BeatPos[Beat-1],24);
+
+  Cursor(9 * BeatPos[Beat - 1], 24);
   DrawMode(NORMAL);
-  _WriteChar('_'-32);
+  _WriteChar('_' - 32);
 
-  ErasePos=Beat-1;
-  if (ErasePos<=0)
-     ErasePos=4;
+  ErasePos = Beat - 1;
+  if (ErasePos <= 0)
+    ErasePos = MaxBeat;
 
-  Cursor(9*BeatPos[ErasePos-1],24);
+  Cursor(9 * BeatPos[ErasePos - 1], 24);
   DrawMode(CLEAR);
-  _WriteChar('_'-32);
-  
-  Refresh();  
+  _WriteChar('_' - 32);
+
+  Refresh();
   Beat++;
-  if (Beat > 4)
+  if (Beat > MaxBeat)
     Beat = 1;
-  
- 
+
+
 }
 
 void BeatGateOff() {
@@ -120,7 +136,12 @@ void interrupt() {
   digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 }
 
-
+void SetupEncoders() {
+  pinMode(encA, INPUT);
+  pinMode(encB, INPUT);
+  digitalWrite(encA, HIGH);
+  digitalWrite(encB, HIGH);
+}
 
 
 void SetupOLED() {
@@ -150,7 +171,7 @@ void SetupOLED() {
     }
     Refresh();
   }
-  
+
   DrawMode(CLEAR);
   for (int x = 0; x < 128; x++) {
     for (int y = 0; y < 64; y++) {
@@ -158,34 +179,36 @@ void SetupOLED() {
     }
     Refresh();
   }
-  
+
   Erase(0, 0, 128, 64);
   Refresh();
 
 }
 
+
+
 void setup() {
   pinMode(Gate, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-
+  SetupEncoders();
   SetupOLED();
 
   DisplayBackground();
   DisplayTempo();
-  
+
   SequenceGateTimer.pause();
   BeatGateTimer.pause();
   SequenceTimer.setCount(0);
   SequenceTimer.pause();
   BeatTimer.setCount(0);
   BeatTimer.pause();
-  
-  
+
+
   SequenceTimer.attachInterrupt(1, SequenceGateOn);
   SequenceGateTimer.attachInterrupt(2, SequenceBeatGateOff);
   BeatTimer.attachInterrupt(3, BeatGateOn);
   BeatGateTimer.attachInterrupt(4, BeatGateOff);
-  
+
   SequenceGateTimer.setPeriod(0015000);
   BeatGateTimer.setPeriod(0015000);
   SequenceGateOn();
@@ -193,33 +216,71 @@ void setup() {
   
 }
 
-void loop() {
+void setTempo(int newTempo) {
+  Tempo = newTempo;
+  BaseTime = 1000000L * 60 / Tempo;
+  BeatGateTime = 1000000L * 60 / Tempo;
 
 }
 
-int CX=54;
-int CY=0;
-int Width=8;
-int Height=8;
-void DisplayBackground(){
-   Line(CX-1,CY,CX-1,CY+Height+1);
-   Line(CX-1,CY+Height+1,78,CY+Height+1);
-   Line(1+CX + Width * 3,0,1+CX + Width * 3,CY+Height+1);
-   int i=0;
-   Cursor(0,20);
-   for (i=0;i<countlength;i++){
-       _WriteChar('~'-32+Timers[i]);
-   }
+void handleEnc1() {
+
+  NewEncPos = encodeVal(encPos);
+  if (NewEncPos != encPos) {
+    encPos = NewEncPos;
+    if (encPos < 1) {
+      encPos = 1;
+    }
+    if (encPos > 180 ) {
+      encPos = 180;
+    }
+    setTempo(encPos);
+    DisplayTempo() ;
+  }
 }
 
+  void loop() {
+    handleEnc1();
 
-void DisplayTempo(){
-  
-  Cursor(CX, CY);
-  Erase(CX, CY, CX + Width * 3, CY + Height);
-  Print(Tempo);
-  Refresh();
-}
+  }
 
+  int CX = 54;
+  int CY = 0;
+  int Width = 8;
+  int Height = 8;
+  void DisplayBackground() {
+    Line(CX - 1, CY, CX - 1, CY + Height + 1);
+    Line(CX - 1, CY + Height + 1, 78, CY + Height + 1);
+    Line(1 + CX + Width * 3, 0, 1 + CX + Width * 3, CY + Height + 1);
+    int i = 0;
+    Cursor(0, 20);
+    for (i = 0; i < countlength; i++) {
+      _WriteChar('~' - 32 + Timers[i]);
+    }
+  }
+
+
+  void DisplayTempo() {
+
+    Cursor(CX, CY);
+    Erase(CX, CY, CX + Width * 3, CY + Height);
+    Print(Tempo);
+    Refresh();
+  }
+
+
+  int encodeVal(int val) {
+    encAVal = digitalRead(encA);
+    encBVal = digitalRead(encB);
+    if (encAVal != encALast) {
+      if (encAVal == encBVal) {
+        val--;
+      } else {
+        val++;
+      }
+      encALast = encAVal;
+    }
+    return val;
+  }
 
 
