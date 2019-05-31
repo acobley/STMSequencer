@@ -46,6 +46,7 @@ long BaseTime = 1000000L * 60 / Tempo;
 long BeatGateTime = 1000000L * 60 / Tempo;
 short Timers[] = {3, 3, 3, 2, 2, 1, 1,2,2,2,2,1,1};
 short BeatPos[] = {0, 3, 5, 6,7,9,11,12,13};
+short Notes[]={0,2,5,0,8,0,0,10,6,2,0,10,8};
 int count = 0;
 int Beat = 1;
 int MaxBeat=8;
@@ -56,6 +57,19 @@ short encPos = Tempo;
 short NewEncPos = Tempo;
 
 int DACS[2] = {PB6, PB7};
+float Range = 819.2; // (2^12/5)
+
+
+volatile int hKey ;
+volatile int hOctave;
+volatile int hNote;
+volatile int houtValue;
+void WriteNote(int Note, int Channel){
+  hOctave = (byte)(Note / 12);
+      hNote = (byte)(Note % 12);
+      houtValue = (int)(Range * (hOctave + (float)hNote / 12));
+      mcpWrite(houtValue,0,0);
+}
 
 void SequenceGateOn() {
   digitalWrite(LED_BUILTIN, true);
@@ -66,7 +80,7 @@ void SequenceGateOn() {
   SequenceGateTimer.refresh();
   SequenceGateTimer.resume();
 
-
+//  Deal with notes
 
   Cursor(10, 0);
   Erase(10, 0, 10 + 8 * 3, 0 + 8);
@@ -83,6 +97,9 @@ void SequenceGateOn() {
   count++;
   if (count >= countlength)
     count = 0;
+
+
+
 
   Refresh();
 }
@@ -283,4 +300,25 @@ void handleEnc1() {
     return val;
   }
 
+void mcpWrite(int value, int DAC, int Channel) {
+  //CS
+  noInterrupts();
+  digitalWrite(DACS[DAC], LOW);
+  //DAC1 write
+  //set top 4 bits of value integer to data variable
+  byte data = value >> 8;
+  data = data & B00001111;
+  if (Channel == 0)
+    data = data | B00110000; //DACA Bit 15 Low
+  else
+    data = data | B10110000; //DACB Bit 15 High
+  SPI.transfer(data);
+  data = value;
+  SPI.transfer(data);
+  // Set digital pin DACCS HIGH
+  digitalWrite(DACS[DAC], HIGH);
+  interrupts();
+
+
+}
 
