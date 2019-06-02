@@ -31,6 +31,7 @@
 //Encoder
 #define encA PB0 //11
 #define encB PB1 //10
+int DACS[2] = {PB6, PB7};
 
 int encAVal, encALast, encBVal;
 
@@ -56,9 +57,9 @@ int ErasePos = 0;
 short encPos = Tempo;
 short NewEncPos = Tempo;
 
-int DACS[2] = {PB6, PB7};
-float Range = 819.2; // (2^12/5)
 
+float Range = 819.2; // (2^12/5)
+int DacTest=0;
 
 volatile int hKey ;
 volatile int hOctave;
@@ -68,7 +69,9 @@ void WriteNote(int Note, int Channel){
   hOctave = (byte)(Note / 12);
       hNote = (byte)(Note % 12);
       houtValue = (int)(Range * (hOctave + (float)hNote / 12));
-      mcpWrite(houtValue,0,0);
+  
+      
+      mcpWrite(houtValue,Channel,0);
 }
 
 void SequenceGateOn() {
@@ -82,9 +85,14 @@ void SequenceGateOn() {
 
 //  Deal with notes
 
-  Cursor(10, 0);
-  Erase(10, 0, 10 + 8 * 3, 0 + 8);
+  WriteNote(Notes[count],0);
+  
+  Cursor(5, 0);
+  Erase(5, 0, 5 + 8 * 5, 0 + 8);
   Print(count + 1);
+  
+ 
+  
   Cursor(9 * count, 22);
   DrawMode(NORMAL);
   _WriteChar('_' - 32);
@@ -202,13 +210,21 @@ void SetupOLED() {
 
 }
 
-
+void SetupDacs(){
+  SPI.begin();
+  SPI.setBitOrder(MSBFIRST);
+  pinMode(DACS[0], OUTPUT);
+  pinMode(DACS[1], OUTPUT);
+  digitalWrite(DACS[0], HIGH);
+  digitalWrite(DACS[1], HIGH);
+}
 
 void setup() {
   pinMode(Gate, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
   SetupEncoders();
   SetupOLED();
+  SetupDacs();
 
   DisplayBackground();
   DisplayTempo();
@@ -258,7 +274,8 @@ void handleEnc1() {
 
   void loop() {
     handleEnc1();
-
+   
+    
   }
 
   int CX = 54;
