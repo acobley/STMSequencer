@@ -47,7 +47,8 @@ long BaseTime = 1000000L * 60 / Tempo;
 long BeatGateTime = 1000000L * 60 / Tempo;
 short Timers[] = {3, 3, 3, 2, 2, 1, 1,2,2,2,2,1,1};
 short BeatPos[] = {0, 3, 5, 6,7,9,11,12,13};
-short Notes[]={0,2,5,0,8,0,0,10,6,2,0,10,8};
+short Notes[]= {0,2,5,0,8,0,0,10,6,2,0,10,8};
+short Octave[]={1,1,1,1,0,1,1,0,0,1,1,0,0};
 int count = 0;
 int Beat = 1;
 int MaxBeat=8;
@@ -65,8 +66,8 @@ volatile int hKey ;
 volatile int hOctave;
 volatile int hNote;
 volatile int houtValue;
-void WriteNote(int Note, int Channel){
-  hOctave = (byte)(Note / 12);
+void WriteNote(int Note, int Octave, int Channel){
+  hOctave = Octave;
       hNote = (byte)(Note % 12);
       houtValue = (int)(Range * (hOctave + (float)hNote / 12));
   
@@ -85,7 +86,7 @@ void SequenceGateOn() {
 
 //  Deal with notes
 
-  WriteNote(Notes[count],0);
+  WriteNote(Notes[count],Octave[count],0);
   
   Cursor(5, 0);
   Erase(5, 0, 5 + 8 * 5, 0 + 8);
@@ -282,15 +283,28 @@ void handleEnc1() {
   int CY = 0;
   int Width = 8;
   int Height = 8;
+  
   void DisplayBackground() {
     Line(CX - 1, CY, CX - 1, CY + Height + 1);
     Line(CX - 1, CY + Height + 1, 78, CY + Height + 1);
     Line(1 + CX + Width * 3, 0, 1 + CX + Width * 3, CY + Height + 1);
     int i = 0;
-    Cursor(0, 20);
+    
     for (i = 0; i < countlength; i++) {
+      Cursor(i*8, 20);
       _WriteChar('~' - 32 + Timers[i]);
     }
+   
+    for (i = 0; i < countlength; i++) {
+      Cursor(i*8, 32);
+      _WriteChar('~' - 32+7 + Notes[i]);
+    }
+    
+    for (i = 0; i < countlength; i++) {
+      Cursor(i*8, 41);
+      _WriteChar('0' - 32 + Octave[i]);
+    }
+    
   }
 
 

@@ -1158,7 +1158,7 @@ const PROGMEM byte Terminal_8pt[] =
   //
   0x60, 0x70, 0x30, 0x30, 0x07f,
   // @611 '~' (7 pixels wide) AEC
-  // 8th Note
+  // 1/8th Note
   // ## ## ##
   // ##  ###
   //
@@ -1168,7 +1168,7 @@ const PROGMEM byte Terminal_8pt[] =
   //
   0x60, 0x70, 0x30, 0x30, 0x07f, 0x01, 0x01,
   // @618 '~' (8 pixels wide) AEC
-  // 1/3rd Note
+  // 1/3rd Note 
   // ## ## ##
   // ##  ###
   //
@@ -1178,7 +1178,7 @@ const PROGMEM byte Terminal_8pt[] =
   //
   0x15, 0x1f, 0x60, 0x70,0x30, 0x07f, 0x01, 0x01,
   // @626 '~' (7 pixels wide) AEC
-  // 16thh Note
+  // 16th Note 1/4
   // ## ## ##
   // ##  ###
   //
@@ -1198,7 +1198,7 @@ const PROGMEM byte Terminal_8pt[] =
   //
   0x17, 0x1d, 0x60, 0x70, 0x30,0x07f, 0x05, 0x05,
   // @641 '~' (8 pixels wide) AEC
-  // 1/5thh Note
+  // 1/6 th Note
   // ## ## ##
   // ##  ###
   //
@@ -1262,7 +1262,7 @@ const PROGMEM byte Terminal_8pt[] =
   //
   0x1C, 0x3E, 0x63, 0x41, 0x41, 0x62, 0x23,0x03,
 
-  // @286 'D' (7 pixels wide)
+  // @686 'D' (7 pixels wide)
   // #####
   //  ## ##
   //  ##  ##
@@ -1273,7 +1273,7 @@ const PROGMEM byte Terminal_8pt[] =
   //
   0x41, 0x7F, 0x7F, 0x41, 0x63, 0x3E, 0x1C,
 
-  // @293 'D#' (7 pixels wide)
+  // @693 'D#' (8 pixels wide)
   // #####
   //  ## ##
   //  ##  ##
@@ -1282,9 +1282,9 @@ const PROGMEM byte Terminal_8pt[] =
   //  ## ##
   // #####
   //
-  0x41, 0x7F, 0x7F, 0x41, 0x63, 0x3E, 0x1C,
+  0x41, 0x7F, 0x7F, 0x41, 0x63, 0x3E, 0x1d,0x03,
 
-  // @223 'E' (7 pixels wide)
+  // @701 'E' (7 pixels wide)
   // #######
   // ##
   // ##
@@ -1295,7 +1295,7 @@ const PROGMEM byte Terminal_8pt[] =
   //
   0x7F, 0x7F, 0x49, 0x49, 0x49, 0x41, 0x41,
 
-  // @230 'F' (7 pixels wide)
+  // @708 'F' (7 pixels wide)
   // #######
   // ##
   // ##
@@ -1306,7 +1306,18 @@ const PROGMEM byte Terminal_8pt[] =
   //
   0x7F, 0x7F, 0x09, 0x09, 0x09, 0x01, 0x01,
 
-  // @237 'G' (7 pixels wide)
+  // @715 'F#' (8 pixels wide)
+  // #######
+  // ##
+  // ##
+  // #####
+  // ##
+  // ##
+  // ##
+  //
+  0x7F, 0x7F, 0x09, 0x09, 0x09, 0x00, 0x03,0x03,
+
+  // @723 'G' (7 pixels wide)
   //   ####
   //  ##  ##
   // ##
@@ -1316,6 +1327,17 @@ const PROGMEM byte Terminal_8pt[] =
   //   ####
   //
   0x1C, 0x3E, 0x63, 0x49, 0x49, 0x7B, 0x3A,
+
+  // @730 'G#' (8 pixels wide)
+  //   ####
+  //  ##  ##
+  // ##
+  // ## ####
+  // ##   ##
+  //  ##  ##
+  //   ####
+  //
+  0x1C, 0x3E, 0x63, 0x49, 0x49, 0x78, 0x3B,0x03,
 };
 
 
@@ -1424,6 +1446,18 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {7,626},      // 1/4th
   {8,633},      // 1/5th
   {8,641},      // 1/6th
+  {7,649},      //A
+{8,656},      //A#
+{7,664},      //B
+{7,671},      //C
+{8,678},      //C#
+{7,686},      //D
+{8,693},      //D#
+{7,701},      //E
+{7,708},      //F
+{8,715},      //F#
+{7,723},      //G
+{8,730},      //G#
 };
 
 // Font information for Terminal_8pt
