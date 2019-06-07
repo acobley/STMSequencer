@@ -45,6 +45,8 @@ HardwareTimer BeatGateTimer(4);
 int Tempo = 121;
 long BaseTime = 1000000L * 60 / Tempo;
 long BeatGateTime = 1000000L * 60 / Tempo;
+long SeqGateTime=BeatGateTime /4;
+long ms15=0015000L;
 short Timers[] = {3, 3, 3, 2, 2, 1, 1,2,2,2,2,1,1};
 short BeatPos[] = {0, 3, 5, 6,7,9,11,12,13};
 short Notes[]= {0,2,5,0,8,0,0,10,6,2,0,10,8};
@@ -87,13 +89,14 @@ void SequenceGateOn() {
 //  Deal with notes
 
   WriteNote(Notes[count],Octave[count],0);
-  
+
+  // Display count
   Cursor(5, 0);
   Erase(5, 0, 5 + 8 * 5, 0 + 8);
   Print(count + 1);
   
  
-  
+  //Display Cursor
   Cursor(9 * count, 22);
   DrawMode(NORMAL);
   _WriteChar('_' - 32);
@@ -158,9 +161,7 @@ void SequenceBeatGateOff() {
 
 }
 
-void interrupt() {
-  digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-}
+
 
 void SetupEncoders() {
   pinMode(encA, INPUT);
@@ -220,9 +221,46 @@ void SetupDacs(){
   digitalWrite(DACS[1], HIGH);
 }
 
+void Start(){
+  SequenceTimer.attachInterrupt(1, SequenceGateOn);
+  SequenceGateTimer.attachInterrupt(2, SequenceBeatGateOff);
+  BeatTimer.attachInterrupt(3, BeatGateOn);
+  BeatGateTimer.attachInterrupt(4, BeatGateOff);
+  Stop();
+  SequenceGateTimer.setPeriod(SeqGateTime);
+  BeatGateTimer.setPeriod(ms15);
+  SequenceGateOn();
+  BeatGateOn();
+}
+
+void Stop(){
+  SequenceGateTimer.pause();
+  BeatGateTimer.pause();
+  SequenceTimer.setCount(0);
+  SequenceTimer.pause();
+  BeatTimer.setCount(0);
+  BeatTimer.pause();
+}
+
+boolean Running=false;
+void interrupt() {
+  //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  Running = !Running; //invert state
+  if (Running){
+    Start();
+  }else{
+    Stop();
+  }
+  
+
+  //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+
+}
+
 void setup() {
   pinMode(Gate, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
+  attachInterrupt(PA0,interrupt, FALLING);
   SetupEncoders();
   SetupOLED();
   SetupDacs();
@@ -237,16 +275,6 @@ void setup() {
   BeatTimer.setCount(0);
   BeatTimer.pause();
 
-
-  SequenceTimer.attachInterrupt(1, SequenceGateOn);
-  SequenceGateTimer.attachInterrupt(2, SequenceBeatGateOff);
-  BeatTimer.attachInterrupt(3, BeatGateOn);
-  BeatGateTimer.attachInterrupt(4, BeatGateOff);
-
-  SequenceGateTimer.setPeriod(0015000);
-  BeatGateTimer.setPeriod(0015000);
-  SequenceGateOn();
-  BeatGateOn();
   
 }
 
@@ -291,17 +319,17 @@ void handleEnc1() {
     int i = 0;
     
     for (i = 0; i < countlength; i++) {
-      Cursor(i*8, 20);
+      Cursor(i*9, 20);
       _WriteChar('~' - 32 + Timers[i]);
     }
    
     for (i = 0; i < countlength; i++) {
-      Cursor(i*8, 32);
+      Cursor(i*9, 32);
       _WriteChar('~' - 32+7 + Notes[i]);
     }
     
     for (i = 0; i < countlength; i++) {
-      Cursor(i*8, 41);
+      Cursor(i*9, 41);
       _WriteChar('0' - 32 + Octave[i]);
     }
     
