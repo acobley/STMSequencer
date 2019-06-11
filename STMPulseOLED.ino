@@ -31,10 +31,14 @@
 //Encoder
 #define encA PB0 //11
 #define encB PB1 //10
+
+#define enc2A PB10 //11
+#define enc2B PB11 //10
+
 int DACS[2] = {PB6, PB7};
 
 int encAVal, encALast, encBVal;
-
+int encAVal2, encALast2, encBVal2;
 
 HardwareTimer SequenceTimer(1);
 HardwareTimer SequenceGateTimer(2);
@@ -59,6 +63,8 @@ int Gate = PB5;
 int ErasePos = 0;
 short encPos = Tempo;
 short NewEncPos = Tempo;
+short encPos2 = Tempo;
+short NewEncPos2 = Tempo;
 
 
 float Range = 819.2; // (2^12/5)
@@ -301,6 +307,22 @@ void handleEnc1() {
   }
 }
 
+
+void handleEnc2() {
+
+  NewEncPos2 = encodeVal2(encPos2);
+  if (NewEncPos2 != encPos) {
+    encPos2 = NewEncPos2;
+    if (encPos2 < 1) {
+      encPos2 = 1;
+    }
+    if (encPos2 > 180 ) {
+      encPos2 = 180;
+    }
+    setTempo(encPos2);
+    DisplayTempo() ;
+  }
+}
   void loop() {
     handleEnc1();
    
@@ -345,7 +367,22 @@ void handleEnc1() {
   }
 
 
-  int encodeVal(int val) {
+  int encodeVal2(int val) {
+    encAVal2 = digitalRead(enc2A);
+    encBVal2 = digitalRead(enc2B);
+    if (encAVal2 != encALast2) {
+      if (encAVal2 == encBVal2) {
+        val--;
+      } else {
+        val++;
+      }
+      encALast2 = encAVal2;
+    }
+    return val;
+  }
+
+
+int encodeVal(int val) {
     encAVal = digitalRead(encA);
     encBVal = digitalRead(encB);
     if (encAVal != encALast) {
