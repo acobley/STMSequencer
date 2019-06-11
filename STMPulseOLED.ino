@@ -49,7 +49,8 @@ HardwareTimer BeatGateTimer(4);
 int Tempo = 121;
 long BaseTime = 1000000L * 60 / Tempo;
 long BeatGateTime = 1000000L * 60 / Tempo;
-long SeqGateTime=BeatGateTime /4;
+short NoteLength=4;
+long SeqGateTime=BeatGateTime /NoteLength;
 long ms15=0015000L;
 short Timers[] = {3, 3, 3, 2, 2, 1, 1,2,2,2,2,1,1};
 short BeatPos[] = {0, 3, 5, 6,7,9,11,12,13};
@@ -63,8 +64,10 @@ int Gate = PB5;
 int ErasePos = 0;
 short encPos = Tempo;
 short NewEncPos = Tempo;
-short encPos2 = Tempo;
-short NewEncPos2 = Tempo;
+short encPos2 = NoteLength;
+short NewEncPos2 = NoteLength;
+
+
 
 
 float Range = 819.2; // (2^12/5)
@@ -172,8 +175,12 @@ void SequenceBeatGateOff() {
 void SetupEncoders() {
   pinMode(encA, INPUT);
   pinMode(encB, INPUT);
+  pinMode(enc2A, INPUT);
+  pinMode(enc2B, INPUT);
   digitalWrite(encA, HIGH);
   digitalWrite(encB, HIGH);
+   digitalWrite(enc2A, HIGH);
+  digitalWrite(enc2B, HIGH);
 }
 
 
@@ -316,11 +323,12 @@ void handleEnc2() {
     if (encPos2 < 1) {
       encPos2 = 1;
     }
-    if (encPos2 > 180 ) {
-      encPos2 = 180;
+    if (encPos2 > 8 ) {
+      encPos2 = 8;
     }
-    setTempo(encPos2);
-    DisplayTempo() ;
+    NoteLength=encPos2;
+    SeqGateTime=BeatGateTime /NoteLength;
+    DisplayNoteLength() ;
   }
 }
   void loop() {
@@ -360,12 +368,19 @@ void handleEnc2() {
 
   void DisplayTempo() {
 
+    Cursor(CX+Width * 4, CY);
+    Erase(CX+Width * 4, CY, CX + Width * 8, CY + Height);
+    Print(NoteLength);
+    Refresh();
+  }
+
+  void DisplayNoteLength() {
+
     Cursor(CX, CY);
     Erase(CX, CY, CX + Width * 3, CY + Height);
     Print(Tempo);
     Refresh();
   }
-
 
   int encodeVal2(int val) {
     encAVal2 = digitalRead(enc2A);
