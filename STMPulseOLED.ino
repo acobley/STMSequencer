@@ -49,16 +49,16 @@ HardwareTimer BeatGateTimer(4);
 int Tempo = 121;
 long BaseTime = 1000000L * 60 / Tempo;
 long BeatGateTime = 1000000L * 60 / Tempo;
-short NoteLength=4;
-long SeqGateTime=BeatGateTime /NoteLength;
-long ms15=0015000L;
-short Timers[] = {3, 3, 3, 2, 2, 1, 1,2,2,2,2,1,1};
-short BeatPos[] = {0, 3, 5, 6,7,9,11,12,13};
-short Notes[]= {0,2,5,0,8,0,0,10,6,2,0,10,8};
-short Octave[]={1,1,1,1,0,1,1,0,0,1,1,0,0};
+short NoteLength = 4;
+long SeqGateTime = BeatGateTime / NoteLength;
+long ms15 = 0015000L;
+short Timers[] = {3, 3, 3, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1};
+short BeatPos[] = {0, 3, 5, 6, 7, 9, 11, 12, 13};
+short Notes[] = {0, 2, 5, 0, 8, 0, 0, 10, 6, 2, 0, 10, 8};
+short Octave[] = {1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0};
 int count = 0;
 int Beat = 1;
-int MaxBeat=8;
+int MaxBeat = 8;
 int countlength = 13;
 int Gate = PB5;
 int ErasePos = 0;
@@ -71,19 +71,19 @@ short NewEncPos2 = NoteLength;
 
 
 float Range = 819.2; // (2^12/5)
-int DacTest=0;
+int DacTest = 0;
 
 volatile int hKey ;
 volatile int hOctave;
 volatile int hNote;
 volatile int houtValue;
-void WriteNote(int Note, int Octave, int Channel){
+void WriteNote(int Note, int Octave, int Channel) {
   hOctave = Octave;
-      hNote = (byte)(Note % 12);
-      houtValue = (int)(Range * (hOctave + (float)hNote / 12));
-  
-      
-      mcpWrite(houtValue,Channel,0);
+  hNote = (byte)(Note % 12);
+  houtValue = (int)(Range * (hOctave + (float)hNote / 12));
+
+
+  mcpWrite(houtValue, Channel, 0);
 }
 
 void SequenceGateOn() {
@@ -95,33 +95,29 @@ void SequenceGateOn() {
   SequenceGateTimer.refresh();
   SequenceGateTimer.resume();
 
-//  Deal with notes
+  //  Deal with notes
 
-  WriteNote(Notes[count],Octave[count],0);
+  WriteNote(Notes[count], Octave[count], 0);
 
   // Display count
   Cursor(5, 0);
   Erase(5, 0, 5 + 8 * 5, 0 + 8);
   Print(count + 1);
-  
- 
+
+
   //Display Cursor
-  Cursor(9 * count, 22);
+  Cursor(9 * count, 14);
   DrawMode(NORMAL);
   _WriteChar('_' - 32);
   ErasePos = count - 1;
   if (ErasePos < 0)
     ErasePos = countlength - 1;
-  Cursor(9 * ErasePos, 22);
+  Cursor(9 * ErasePos, 14);
   DrawMode(CLEAR);
   _WriteChar('_' - 32);
   count++;
   if (count >= countlength)
     count = 0;
-
-
-
-
   Refresh();
 }
 
@@ -135,11 +131,11 @@ void BeatGateOn() {
   BeatGateTimer.resume();
   BeatTimer.resume();
 
-  Cursor(15 * 8, 0);
-  Erase(15 * 8, 0, 15 * 8 + 8 * 3, 0 + 8);
+  Cursor(13 * 8, 0);
+  Erase(13 * 8, 0, 13 * 8 + 8, 0 + 8);
   Print(Beat);
 
-  Cursor(9 * BeatPos[Beat - 1], 24);
+  Cursor(9 * BeatPos[Beat - 1], 16);
   DrawMode(NORMAL);
   _WriteChar('_' - 32);
 
@@ -147,7 +143,7 @@ void BeatGateOn() {
   if (ErasePos <= 0)
     ErasePos = MaxBeat;
 
-  Cursor(9 * BeatPos[ErasePos - 1], 24);
+  Cursor(9 * BeatPos[ErasePos - 1], 16);
   DrawMode(CLEAR);
   _WriteChar('_' - 32);
 
@@ -179,7 +175,7 @@ void SetupEncoders() {
   pinMode(enc2B, INPUT);
   digitalWrite(encA, HIGH);
   digitalWrite(encB, HIGH);
-   digitalWrite(enc2A, HIGH);
+  digitalWrite(enc2A, HIGH);
   digitalWrite(enc2B, HIGH);
 }
 
@@ -225,7 +221,7 @@ void SetupOLED() {
 
 }
 
-void SetupDacs(){
+void SetupDacs() {
   SPI.begin();
   SPI.setBitOrder(MSBFIRST);
   pinMode(DACS[0], OUTPUT);
@@ -234,7 +230,7 @@ void SetupDacs(){
   digitalWrite(DACS[1], HIGH);
 }
 
-void Start(){
+void Start() {
   SequenceTimer.attachInterrupt(1, SequenceGateOn);
   SequenceGateTimer.attachInterrupt(2, SequenceBeatGateOff);
   BeatTimer.attachInterrupt(3, BeatGateOn);
@@ -246,7 +242,7 @@ void Start(){
   BeatGateOn();
 }
 
-void Stop(){
+void Stop() {
   SequenceGateTimer.pause();
   BeatGateTimer.pause();
   SequenceTimer.setCount(0);
@@ -255,16 +251,16 @@ void Stop(){
   BeatTimer.pause();
 }
 
-boolean Running=false;
+boolean Running = false;
 void interrupt() {
   //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
   Running = !Running; //invert state
-  if (Running){
+  if (Running) {
     Start();
-  }else{
+  } else {
     Stop();
   }
-  
+
 
   //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
 
@@ -273,7 +269,7 @@ void interrupt() {
 void setup() {
   pinMode(Gate, OUTPUT);
   pinMode(LED_BUILTIN, OUTPUT);
-  attachInterrupt(PA0,interrupt, FALLING);
+  attachInterrupt(PA0, interrupt, FALLING);
   SetupEncoders();
   SetupOLED();
   SetupDacs();
@@ -288,7 +284,7 @@ void setup() {
   BeatTimer.setCount(0);
   BeatTimer.pause();
 
-  
+
 }
 
 void setTempo(int newTempo) {
@@ -298,6 +294,36 @@ void setTempo(int newTempo) {
 
 }
 
+
+
+int encodeVal2(int val) {
+  encAVal2 = digitalRead(enc2A);
+  encBVal2 = digitalRead(enc2B);
+  if (encAVal2 != encALast2) {
+    if (encAVal2 == encBVal2) {
+      val--;
+    } else {
+      val++;
+    }
+    encALast2 = encAVal2;
+  }
+  return val;
+}
+
+
+int encodeVal(int val) {
+  encAVal = digitalRead(encA);
+  encBVal = digitalRead(encB);
+  if (encAVal != encALast) {
+    if (encAVal == encBVal) {
+      val--;
+    } else {
+      val++;
+    }
+    encALast = encAVal;
+  }
+  return val;
+}
 void handleEnc1() {
 
   NewEncPos = encodeVal(encPos);
@@ -310,7 +336,7 @@ void handleEnc1() {
       encPos = 180;
     }
     setTempo(encPos);
-    DisplayTempo() ;
+    //DisplayTempo() ;
   }
 }
 
@@ -326,90 +352,67 @@ void handleEnc2() {
     if (encPos2 > 8 ) {
       encPos2 = 8;
     }
-    NoteLength=encPos2;
-    SeqGateTime=BeatGateTime /NoteLength;
+    NoteLength = encPos2;
+    SeqGateTime = BeatGateTime / NoteLength;
+    SequenceGateTimer.setPeriod(SeqGateTime);
     DisplayNoteLength() ;
   }
 }
-  void loop() {
-    handleEnc1();
-   
-    
+void loop() {
+  handleEnc1();
+  handleEnc2();
+
+
+}
+
+int CX = 54;
+int CY = 0;
+int Width = 8;
+int Height = 8;
+
+
+void DisplayTempo() {
+
+  Cursor(CX, CY);
+  Erase(CX, CY, CX + Width * 3, CY + Height);
+  Print(Tempo);
+  Refresh();
+}
+
+void DisplayNoteLength() {
+  Cursor(CX + Width * 4, CY);
+  Erase(CX + Width * 4, CY, CX + Width * 5, CY + Height);
+  Print(9-NoteLength);
+  Refresh();
+}
+
+void DisplayBackground() {
+  Line(CX - 1, CY, CX - 1, CY + Height + 1);
+  Line(CX - 1, CY + Height + 1, 78, CY + Height + 1);
+  Line(1 + CX + Width * 3, 0, 1 + CX + Width * 3, CY + Height + 1);
+  int i = 0;
+
+  for (i = 0; i < countlength; i++) {
+    Cursor(i * 9, 12);
+    _WriteChar('~' - 32 + Timers[i]);
   }
 
-  int CX = 54;
-  int CY = 0;
-  int Width = 8;
-  int Height = 8;
-  
-  void DisplayBackground() {
-    Line(CX - 1, CY, CX - 1, CY + Height + 1);
-    Line(CX - 1, CY + Height + 1, 78, CY + Height + 1);
-    Line(1 + CX + Width * 3, 0, 1 + CX + Width * 3, CY + Height + 1);
-    int i = 0;
-    
-    for (i = 0; i < countlength; i++) {
-      Cursor(i*9, 20);
-      _WriteChar('~' - 32 + Timers[i]);
-    }
-   
-    for (i = 0; i < countlength; i++) {
-      Cursor(i*9, 32);
-      _WriteChar('~' - 32+7 + Notes[i]);
-    }
-    
-    for (i = 0; i < countlength; i++) {
-      Cursor(i*9, 41);
-      _WriteChar('0' - 32 + Octave[i]);
-    }
-    
+  for (i = 0; i < countlength; i++) {
+    Cursor(i * 9, 24);
+    _WriteChar('~' - 32 + 7 + Notes[i]);
   }
 
-
-  void DisplayTempo() {
-
-    Cursor(CX+Width * 4, CY);
-    Erase(CX+Width * 4, CY, CX + Width * 8, CY + Height);
-    Print(NoteLength);
-    Refresh();
+  for (i = 0; i < countlength; i++) {
+    Cursor(i * 9, 33);
+    _WriteChar('0' - 32 + Octave[i]);
   }
 
-  void DisplayNoteLength() {
-
-    Cursor(CX, CY);
-    Erase(CX, CY, CX + Width * 3, CY + Height);
-    Print(Tempo);
-    Refresh();
-  }
-
-  int encodeVal2(int val) {
-    encAVal2 = digitalRead(enc2A);
-    encBVal2 = digitalRead(enc2B);
-    if (encAVal2 != encALast2) {
-      if (encAVal2 == encBVal2) {
-        val--;
-      } else {
-        val++;
-      }
-      encALast2 = encAVal2;
-    }
-    return val;
-  }
+}
 
 
-int encodeVal(int val) {
-    encAVal = digitalRead(encA);
-    encBVal = digitalRead(encB);
-    if (encAVal != encALast) {
-      if (encAVal == encBVal) {
-        val--;
-      } else {
-        val++;
-      }
-      encALast = encAVal;
-    }
-    return val;
-  }
+
+
+
 
 void mcpWrite(int value, int DAC, int Channel) {
   //CS
