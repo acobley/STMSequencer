@@ -2334,12 +2334,11 @@ design rules under a new name.</description>
 <attribute name="SF_SKU" value="COM-09117" x="88" y="25" size="1.778" layer="28" rot="MR270" display="off"/>
 <attribute name="VALUE" x="94.477" y="19.92" size="0.6096" layer="28" font="vector" ratio="20" rot="MR270" align="top-center"/>
 </element>
-<element name="U$2" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="83.7" y="-27.1" smashed="yes" rot="R90"/>
-<element name="U$3" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="132.7" y="-27.6" smashed="yes" rot="R90"/>
-<element name="U$4" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="132.6" y="93" smashed="yes" rot="R90"/>
-<element name="U$5" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="83.8" y="93.6" smashed="yes" rot="R90"/>
-<element name="U$6" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="83.8" y="93.6" smashed="yes" rot="R90"/>
-<element name="U$7" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="83.8" y="93.6" smashed="yes" rot="R90"/>
+<element name="U$2" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="85.415" y="-27.98" smashed="yes" rot="R90"/>
+<element name="U$3" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="131.135" y="-27.98" smashed="yes" rot="R90"/>
+<element name="U$4" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="131.135" y="94.54" smashed="yes" rot="R90"/>
+<element name="U$5" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="83.8" y="94.54" smashed="yes" rot="R90"/>
+<element name="U$7" library="GMSN-R2Project" package="MOUNTING_HOLE" value="" x="85.415" y="94.54" smashed="yes" rot="R90"/>
 </elements>
 <signals>
 <signal name="GND" class="1">
