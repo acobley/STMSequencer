@@ -16745,16 +16745,18 @@ CONN_05x2
 <part name="IC2" library="GMSN-R2Project" deviceset="MCP6004" device="D"/>
 <part name="C3" library="rcl" deviceset="C-US" device="C0805K" value="100n"/>
 <part name="BUT3" library="INSTRUO" deviceset="PB6149L-5" device=""/>
-<part name="R14" library="rcl" deviceset="R-US_" device="R0805" value="330R"/>
+<part name="R14" library="rcl" deviceset="R-US_" device="R0805" value="220R"/>
 <part name="R23" library="rcl" deviceset="R-US_" device="R0805" value="100K"/>
-<part name="CLOCK" library="INSTRUO" deviceset="TRANSISTOR_MMBT3904" device="" value="2N3904">
+<part name="T1_CLOCK" library="INSTRUO" deviceset="TRANSISTOR_MMBT3904" device="" value="2N3904">
+<attribute name="LABLEL" value="T1_Start"/>
 <attribute name="RS-PART" value="725-8616 "/>
 </part>
 <part name="R15" library="rcl" deviceset="R-US_" device="R0805" value="10K"/>
 <part name="R16" library="rcl" deviceset="R-US_" device="R0805" value="100K"/>
 <part name="R17" library="rcl" deviceset="R-US_" device="R0805" value="1M"/>
 <part name="START" library="INSTRUO" deviceset="S_JACK" device="" value="S_JACK"/>
-<part name="CLOCK1" library="INSTRUO" deviceset="TRANSISTOR_MMBT3904" device="" value="TRANSISTOR_MMBT3904">
+<part name="T2_RESET" library="INSTRUO" deviceset="TRANSISTOR_MMBT3904" device="" value="TRANSISTOR_MMBT3904">
+<attribute name="LABEL" value="T2_Reset"/>
 <attribute name="RS-PART" value="725-8616 "/>
 </part>
 <part name="R18" library="rcl" deviceset="R-US_" device="R0805" value="10K"/>
@@ -16947,13 +16949,6 @@ CONN_05x2
 <label x="17.78" y="48.26" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
-<net name="BUTLED3" class="0">
-<segment>
-<pinref part="U$1" gate="G$1" pin="PA11"/>
-<wire x1="27.94" y1="66.04" x2="17.78" y2="66.04" width="0.1524" layer="91"/>
-<label x="17.78" y="66.04" size="1.778" layer="95" rot="R180"/>
-</segment>
-</net>
 <net name="START" class="0">
 <segment>
 <pinref part="U$1" gate="G$1" pin="PA1"/>
@@ -16973,6 +16968,13 @@ CONN_05x2
 <pinref part="U$1" gate="G$1" pin="PB12"/>
 <wire x1="27.94" y1="83.82" x2="17.78" y2="83.82" width="0.1524" layer="91"/>
 <label x="17.78" y="83.82" size="1.778" layer="95" rot="R180"/>
+</segment>
+</net>
+<net name="BUTLED3" class="0">
+<segment>
+<pinref part="U$1" gate="G$1" pin="PA12"/>
+<wire x1="27.94" y1="63.5" x2="17.78" y2="63.5" width="0.1524" layer="91"/>
+<label x="17.78" y="63.5" size="1.778" layer="95" rot="R180"/>
 </segment>
 </net>
 </nets>
@@ -17013,8 +17015,9 @@ CONN_05x2
 <attribute name="NAME" x="158.9786" y="123.19" size="1.778" layer="95" rot="MR90"/>
 <attribute name="VALUE" x="154.178" y="123.19" size="1.778" layer="96" rot="MR90"/>
 </instance>
-<instance part="CLOCK" gate="G$1" x="5.08" y="190.5" smashed="yes" rot="R90">
+<instance part="T1_CLOCK" gate="G$1" x="5.08" y="190.5" smashed="yes" rot="R90">
 <attribute name="RS-PART" x="5.08" y="190.5" size="1.778" layer="96" rot="R90" display="off"/>
+<attribute name="LABLEL" x="5.08" y="190.5" size="1.778" layer="96" rot="R90"/>
 </instance>
 <instance part="R15" gate="G$1" x="10.16" y="213.36" smashed="yes" rot="MR90">
 <attribute name="NAME" x="11.6586" y="209.55" size="1.778" layer="95" rot="MR90"/>
@@ -17032,8 +17035,9 @@ CONN_05x2
 <attribute name="NAME" x="-38.1" y="192.024" size="1.778" layer="95" rot="MR0"/>
 <attribute name="VALUE" x="-38.1" y="181.864" size="1.778" layer="96" rot="MR0"/>
 </instance>
-<instance part="CLOCK1" gate="G$1" x="142.24" y="185.42" smashed="yes" rot="R90">
+<instance part="T2_RESET" gate="G$1" x="142.24" y="185.42" smashed="yes" rot="R90">
 <attribute name="RS-PART" x="142.24" y="185.42" size="1.778" layer="96" rot="R90" display="off"/>
+<attribute name="LABEL" x="142.24" y="185.42" size="1.778" layer="96" rot="R90"/>
 </instance>
 <instance part="R18" gate="G$1" x="147.32" y="208.28" smashed="yes" rot="MR90">
 <attribute name="NAME" x="148.8186" y="204.47" size="1.778" layer="95" rot="MR90"/>
@@ -17161,7 +17165,7 @@ CONN_05x2
 <label x="104.14" y="114.3" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="CLOCK" gate="G$1" pin="E"/>
+<pinref part="T1_CLOCK" gate="G$1" pin="E"/>
 <wire x1="10.16" y1="177.8" x2="10.16" y2="175.26" width="0.1524" layer="91"/>
 <label x="10.16" y="175.26" size="1.778" layer="95"/>
 </segment>
@@ -17177,7 +17181,7 @@ CONN_05x2
 <label x="-33.02" y="182.88" size="1.778" layer="95"/>
 </segment>
 <segment>
-<pinref part="CLOCK1" gate="G$1" pin="E"/>
+<pinref part="T2_RESET" gate="G$1" pin="E"/>
 <wire x1="147.32" y1="172.72" x2="147.32" y2="170.18" width="0.1524" layer="91"/>
 <label x="147.32" y="170.18" size="1.778" layer="95"/>
 </segment>
@@ -17395,7 +17399,7 @@ CONN_05x2
 </net>
 <net name="START" class="0">
 <segment>
-<pinref part="CLOCK" gate="G$1" pin="C"/>
+<pinref part="T1_CLOCK" gate="G$1" pin="C"/>
 <pinref part="R15" gate="G$1" pin="1"/>
 <wire x1="10.16" y1="208.28" x2="10.16" y2="205.74" width="0.1524" layer="91"/>
 <wire x1="10.16" y1="205.74" x2="10.16" y2="203.2" width="0.1524" layer="91"/>
@@ -17410,7 +17414,7 @@ CONN_05x2
 <pinref part="R17" gate="G$1" pin="2"/>
 <wire x1="-17.78" y1="190.5" x2="-12.7" y2="190.5" width="0.1524" layer="91"/>
 <wire x1="-12.7" y1="190.5" x2="-12.7" y2="187.96" width="0.1524" layer="91"/>
-<pinref part="CLOCK" gate="G$1" pin="B"/>
+<pinref part="T1_CLOCK" gate="G$1" pin="B"/>
 <wire x1="-7.62" y1="190.5" x2="-12.7" y2="190.5" width="0.1524" layer="91"/>
 <junction x="-12.7" y="190.5"/>
 </segment>
@@ -17428,7 +17432,7 @@ CONN_05x2
 <pinref part="R20" gate="G$1" pin="2"/>
 <wire x1="119.38" y1="185.42" x2="124.46" y2="185.42" width="0.1524" layer="91"/>
 <wire x1="124.46" y1="185.42" x2="124.46" y2="182.88" width="0.1524" layer="91"/>
-<pinref part="CLOCK1" gate="G$1" pin="B"/>
+<pinref part="T2_RESET" gate="G$1" pin="B"/>
 <wire x1="129.54" y1="185.42" x2="124.46" y2="185.42" width="0.1524" layer="91"/>
 <junction x="124.46" y="185.42"/>
 </segment>
@@ -17442,7 +17446,7 @@ CONN_05x2
 </net>
 <net name="RESET" class="0">
 <segment>
-<pinref part="CLOCK1" gate="G$1" pin="C"/>
+<pinref part="T2_RESET" gate="G$1" pin="C"/>
 <pinref part="R18" gate="G$1" pin="1"/>
 <wire x1="147.32" y1="203.2" x2="147.32" y2="200.66" width="0.1524" layer="91"/>
 <wire x1="147.32" y1="200.66" x2="147.32" y2="198.12" width="0.1524" layer="91"/>
