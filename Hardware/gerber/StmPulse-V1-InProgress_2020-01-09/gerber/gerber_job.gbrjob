@@ -1,0 +1,24 @@
+{
+    "Header": {
+        "Comment": "All values are metric (mm)",
+        "CreationDate": "2020-01-09T19:24:00Z",
+        "GenerationSoftware": {
+            "Application": "EAGLE",
+            "Vendor": "Autodesk",
+            "Version": "9.5.2"
+        },
+        "Part": "Single"
+    },
+    "Overall": {
+        "BoardThickness": 1.57,
+        "LayerNumber": 2,
+        "Name": {
+            "ProjectId": "StmPulse-V1-InProgress"
+        },
+        "Owner": "Aecobley Aecobley <aecobley@dundee.ac.uk>",
+        "Size": {
+            "X": 60.3,
+            "Y": 128.52
+        }
+    }
+}
