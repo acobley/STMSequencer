@@ -42,6 +42,7 @@
 #define RESET PA1
 
 int DACS[2] = {PB6, PB7};
+int Gate = PB5;
 char Modes[] = {'P', 'L', 'N', 'O', 'M'};
 byte Mode = 0;
 
@@ -63,13 +64,16 @@ long ms15 = 0015000L;
 short Timers[] = {3, 3, 3, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1};
 short BeatPos[] = {0, 3, 5, 6, 7, 9, 11, 12, 13};
 short Notes[] = {0, 2, 5, 0, 8, 0, 0, 10, 6, 2, 0, 10, 8};
-short Octave[] = {1, 1, 1, 1, 0, 1, 1, 0, 0, 1, 1, 0, 0};
+short Octave[] = {0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0};
 int count = 0;
+int ErasePos = -1;
+int bErasePos;
 int Beat = 1;
 int MaxBeat = 8;
 int countlength = 13;
-int Gate = PB5;
-int ErasePos = 0;
+float NumberOfBeats=1.0;
+
+
 short encPos = Tempo;
 short NewEncPos = Tempo;
 short encPos2 = NoteLength;
@@ -79,13 +83,17 @@ short NewEncPos2 = NoteLength;
 
 
 float Range = 819.2; // (2^12/5)
-int DacTest = 0;
+
 
 volatile int hKey ;
 volatile int hOctave;
 volatile int hNote;
 volatile int houtValue;
 
+int CX = 0;
+int CY = 0;
+int Width = 8;
+int Height = 8;
 
 
 
@@ -171,6 +179,14 @@ void SetupSwitches() {
   pinMode(LED_BUILTIN, OUTPUT);
 }
 
+void BeatsNumber(){
+  float tmp=0.0;
+  int i=0;
+  for (i = 0; i < countlength; i++) {
+     tmp=tmp  +1.0/(float)Timers[i];
+  }
+  NumberOfBeats=tmp;
+}
 
 void setup() {
 
@@ -178,7 +194,8 @@ void setup() {
   SetupOLED();
   SetupDacs();
   SetupSwitches();
-
+  BeatsNumber();
+  
   DisplayBackground();
   DisplayTempo();
   DisplayMode();
@@ -212,22 +229,31 @@ void SequenceGateOn() {
   WriteNote(Notes[count], Octave[count], 0);
 
   // Display count
-  DisplayCount(count, 0, 0);
+  DisplayCount(count+1, 0, 0);
 
   //Display Cursor
-  Cursor(9 * count, 14);
-  DrawMode(NORMAL);
-  _WriteChar('_' - 32);
-  ErasePos = count - 1;
-  if (ErasePos < 0)
-    ErasePos = countlength - 1;
-  Cursor(9 * ErasePos, 14);
-  DrawMode(CLEAR);
-  _WriteChar('_' - 32);
-  count++;
-  if (count >= countlength)
-    count = 0;
+
+  Cursor(9 * count, 12);
+  DrawMode(INVERT);
+  _WriteChar(113);
+
+  if (ErasePos >= 0) {
+
+    Cursor(9 * ErasePos, 12);
+    DrawMode(INVERT);
+    _WriteChar(113);
+  }
+
   Refresh();
+  ErasePos++;  
+  if (ErasePos>=countlength)
+     ErasePos=0;
+  count++;
+  if (count >= countlength) {
+    count = 0;
+    ErasePos = countlength - 1;
+  }
+  
 }
 
 
@@ -247,11 +273,11 @@ void BeatGateOn() {
   DrawMode(NORMAL);
   _WriteChar('_' - 32);
 
-  ErasePos = Beat - 1;
-  if (ErasePos <= 0)
-    ErasePos = MaxBeat;
+  bErasePos = Beat - 1;
+  if (bErasePos <= 0)
+    bErasePos = MaxBeat;
 
-  Cursor(9 * BeatPos[ErasePos - 1], 16);
+  Cursor(9 * BeatPos[bErasePos - 1], 16);
   DrawMode(CLEAR);
   _WriteChar('_' - 32);
 
@@ -364,11 +390,8 @@ int encodeVal(int val) {
     } else {
       val++;
     }
-    switch (Mode) {
-      case 0: encALast = encAVal;
-        break;
-      default: break;
-    }
+    encALast = encAVal;
+
   }
   return val;
 }
@@ -418,10 +441,18 @@ void handleEnc2() {
 }
 
 
-int CX = 0;
-int CY = 0;
-int Width = 8;
-int Height = 8;
+void DisplayBeatCount(){
+  BeatsNumber();
+  int CX=Width * 7;
+  int CY= Height * 5;
+  Cursor(CX, CY);
+  Erase(CX, CY, CX + Width*5 , CY + Height);
+  char sTmp[6];
+  sprintf(sTmp,"%5.2f",NumberOfBeats);
+  Print(sTmp);
+  Refresh();
+  
+}
 
 
 void DisplayChar(char C, byte x, byte y) {
@@ -434,7 +465,7 @@ void DisplayChar(char C, byte x, byte y) {
 
 //Display two digit integer
 void DisplayCount(byte Count, byte x, byte y) {
-  Count++;
+  //Count++;
 
   byte low = 16 + Count % 10;
   byte high = 16 + Count / 10;
@@ -446,7 +477,7 @@ void DisplayCount(byte Count, byte x, byte y) {
 
 }
 void DisplayMode() {
-  DisplayChar(Modes[Mode]-32, 4, 0);
+  DisplayChar(Modes[Mode] - 32, 4, 0);
   Refresh();
 
 }
@@ -490,7 +521,7 @@ void DisplayBackground() {
     Cursor(i * 9, 33);
     _WriteChar('0' - 32 + Octave[i]);
   }
-
+  DisplayBeatCount();
 }
 
 

@@ -1338,6 +1338,17 @@ const PROGMEM byte Terminal_8pt[] =
   //   ####
   //
   0x1C, 0x3E, 0x63, 0x49, 0x49, 0x78, 0x3B,0x03,
+
+  // @738 Block (8 pixels wide)
+  // ########  
+   // ######## 
+   // ######## 
+   // ######## 
+   // ######## 
+   // ######## 
+   // ######## 
+  //
+  0xff, 0xff, 0xff, 0xff, 0xff, 0xff, 0xff,0xff,
 };
 
 
@@ -1345,7 +1356,7 @@ const PROGMEM byte Terminal_8pt[] =
 // { [Char width in bits], [Offset into Terminal_8ptCharBitmaps in bytes] }
 const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
 {
-  {8, 0}, 		//
+  {8, 0}, 		// space 0
   {2, 8}, 		// !
   {5, 10}, 		// "
   {7, 15}, 		// #
@@ -1355,7 +1366,7 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {4, 42}, 		// '
   {4, 46}, 		// (
   {4, 50}, 		// )
-  {6, 54}, 		// *
+  {6, 54}, 		// * 10
   {6, 60}, 		// +
   {3, 66}, 		// ,
   {7, 69}, 		// -
@@ -1365,7 +1376,7 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {6, 93}, 		// 1
   {7, 99}, 		// 2
   {7, 106}, 		// 3
-  {7, 113}, 		// 4
+  {7, 113}, 		// 4 20
   {7, 120}, 		// 5
   {7, 127}, 		// 6
   {7, 134}, 		// 7
@@ -1375,7 +1386,7 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {3, 157}, 		// ;
   {7, 160}, 		// <
   {7, 167}, 		// =
-  {7, 174}, 		// >
+  {7, 174}, 		// > 30
   {7, 181}, 		// ?
   {7, 188}, 		// @
   {7, 195}, 		// A
@@ -1385,7 +1396,7 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {7, 223}, 		// E
   {7, 230}, 		// F
   {7, 237}, 		// G
-  {7, 244}, 		// H
+  {7, 244}, 		// H 40
   {4, 251}, 		// I
   {7, 255}, 		// J
   {7, 262}, 		// K
@@ -1395,7 +1406,7 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {7, 290}, 		// O
   {7, 297}, 		// P
   {7, 304}, 		// Q
-  {7, 311}, 		// R
+  {7, 311}, 		// R 50
   {7, 318}, 		// S
   {6, 325}, 		// T
   {7, 331}, 		// U
@@ -1405,8 +1416,8 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {6, 359}, 		// Y
   {7, 365}, 		// Z
   {5, 372}, 		// [
-  {7, 377}, 		// backslash
-  {5, 384}, 		// ]
+  {7, 377}, 		// backslash 60
+  {5, 384}, 		// ] 
   {6, 389}, 		// ^
   {9, 395}, 		// _
   {4, 404}, 		// `
@@ -1415,8 +1426,8 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {7, 422}, 		// c
   {7, 429}, 		// d
   {7, 436}, 		// e
-  {7, 443}, 		// f
-  {7, 450}, 		// g
+  {7, 443}, 		// f 70
+  {7, 450}, 		// g 
   {7, 457}, 		// h
   {4, 464}, 		// i
   {6, 468}, 		// j
@@ -1425,8 +1436,8 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {8, 484}, 		// m
   {7, 492}, 		// n
   {7, 499}, 		// o
-  {7, 506}, 		// p
-  {7, 513}, 		// q
+  {7, 506}, 		// p 80
+  {7, 513}, 		// q 
   {7, 520}, 		// r
   {7, 527}, 		// s
   {7, 534}, 		// t
@@ -1435,8 +1446,8 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {8, 555}, 		// w
   {7, 563}, 		// x
   {7, 570}, 		// y
-  {7, 577}, 		// z
-  {6, 584}, 		// {
+  {7, 577}, 		// z 90
+  {6, 584}, 		// { 
   {2, 590}, 		// |
   {6, 592}, 		// }
   {8, 598}, 		// ~
@@ -1445,8 +1456,8 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
   {8,618},      // 1/4th
   {7,626},      // 1/4th
   {8,633},      // 1/5th
-  {8,641},      // 1/6th
-  {7,649},      //A
+  {8,641},      // 1/6th 100
+  {7,649},      //A 
 {8,656},      //A#
 {7,664},      //B
 {7,671},      //C
@@ -1455,9 +1466,10 @@ const PROGMEM unsigned int Terminal_8ptDescriptors[][2] =
 {8,693},      //D#
 {7,701},      //E
 {7,708},      //F
-{8,715},      //F#
-{7,723},      //G
+{8,715},      //F# 110
+{7,723},      //G 
 {8,730},      //G#
+{8,738},      // block
 };
 
 // Font information for Terminal_8pt
