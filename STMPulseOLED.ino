@@ -41,7 +41,7 @@
 #define START PA2
 #define RESET PA1
 
-int DACS[2] = {PB6, PB7};
+int DACS[2] = {PB6, PB7}; //????
 int Gate = PB5;
 char Modes[] = {'P', 'L', 'N', 'O', 'M'};
 byte Mode = 0;
@@ -82,8 +82,8 @@ short NewEncPos2 = NoteLength;
 
 
 
-float Range = 819.2; // (2^12/5)
-
+//float Range = 819.2; // (2^12/5)
+float Range = 1365.33333; // (2^12/3)
 
 volatile int hKey ;
 volatile int hOctave;
@@ -558,4 +558,3 @@ void WriteNote(int Note, int Octave, int Channel) {
 
   mcpWrite(houtValue, Channel, 0);
 }
-
