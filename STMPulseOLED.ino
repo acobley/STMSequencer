@@ -20,6 +20,13 @@
 
 */
 
+/*
+ *  To setup BluePill:
+ *  
+ *  https://circuitdigest.com/microcontroller-projects/getting-started-with-stm32-development-board-stm32f103c8-using-arduino-ide
+ *  
+ */
+
 
 #include "HardwareTimer.h"
 #include "SPI.h"
@@ -41,8 +48,11 @@
 #define START PA2
 #define RESET PA1
 
-int DACS[2] = {PB6, PB7}; //????
-int Gate = PB5;
+int DAC = PB6; //????
+int Gate1 = PC13;
+int Gate2 = PB5;
+byte CV1=0;
+byte CV2=1;
 char Modes[] = {'P', 'L', 'N', 'O', 'M'};
 byte Mode = 0;
 
@@ -154,10 +164,10 @@ void SetupOLED() {
 void SetupDacs() {
   SPI.begin();
   SPI.setBitOrder(MSBFIRST);
-  pinMode(DACS[0], OUTPUT);
-  pinMode(DACS[1], OUTPUT);
-  digitalWrite(DACS[0], HIGH);
-  digitalWrite(DACS[1], HIGH);
+  pinMode(DAC, OUTPUT);
+  
+  digitalWrite(DAC, HIGH);
+
 }
 
 void SetupSwitches() {
@@ -175,8 +185,8 @@ void SetupSwitches() {
 
   attachInterrupt(RESET, IntReset, RISING);
 
-  pinMode(Gate, OUTPUT);
-  pinMode(LED_BUILTIN, OUTPUT);
+  pinMode(Gate2, OUTPUT);
+  pinMode(Gate1, OUTPUT);
 }
 
 void BeatsNumber(){
@@ -216,7 +226,7 @@ void loop() {
 }
 
 void SequenceGateOn() {
-  digitalWrite(LED_BUILTIN, true);
+  digitalWrite(Gate1, true);
   long Time = (long)(BaseTime / Timers[count]);
   SequenceTimer.setPeriod(Time);
   SequenceTimer.refresh();
@@ -226,7 +236,7 @@ void SequenceGateOn() {
 
   //  Deal with notes
 
-  WriteNote(Notes[count], Octave[count], 0);
+  WriteNote(Notes[count], Octave[count], CV1);
 
   // Display count
   DisplayCount(count+1, 0, 0);
@@ -258,7 +268,7 @@ void SequenceGateOn() {
 
 
 void BeatGateOn() {
-  digitalWrite(Gate, true);
+  digitalWrite(Gate2, true);
   digitalWrite(BUTLED3, true);
   BeatTimer.setPeriod(BeatGateTime);
   BeatTimer.refresh();
@@ -291,13 +301,13 @@ void BeatGateOn() {
 
 void BeatGateOff() {
   BeatGateTimer.pause();
-  digitalWrite(Gate, false);
+  digitalWrite(Gate2, false);
   digitalWrite(BUTLED3, false);
 
 }
 void SequenceBeatGateOff() {
   SequenceGateTimer.pause();
-  digitalWrite(LED_BUILTIN, false);
+  digitalWrite(Gate1, false);
 
 }
 
@@ -529,10 +539,10 @@ void DisplayBackground() {
 
 
 
-void mcpWrite(int value, int DAC, int Channel) {
+void mcpWrite(int value,int Channel) {
   //CS
   noInterrupts();
-  digitalWrite(DACS[DAC], LOW);
+  digitalWrite(DAC, LOW);
   //DAC1 write
   //set top 4 bits of value integer to data variable
   byte data = value >> 8;
@@ -545,7 +555,7 @@ void mcpWrite(int value, int DAC, int Channel) {
   data = value;
   SPI.transfer(data);
   // Set digital pin DACCS HIGH
-  digitalWrite(DACS[DAC], HIGH);
+  digitalWrite(DAC, HIGH);
   interrupts();
 
 }
@@ -556,5 +566,5 @@ void WriteNote(int Note, int Octave, int Channel) {
   houtValue = (int)(Range * (hOctave + (float)hNote / 12));
 
 
-  mcpWrite(houtValue, Channel, 0);
+  mcpWrite(houtValue, 0);
 }
