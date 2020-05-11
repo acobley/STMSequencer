@@ -49,10 +49,10 @@
 #define RESET PA1
 
 int DAC = PB6; //????
-int Gate1 = PC13;
-int Gate2 = PB5;
-byte CV1=0;
-byte CV2=1;
+int Gate1 = PB5;
+int Gate2 = PC13;
+byte CV1=1;
+byte CV2=0;
 char Modes[] = {'P', 'L', 'N', 'O', 'M'};
 byte Mode = 0;
 
@@ -566,5 +566,6 @@ void WriteNote(int Note, int Octave, int Channel) {
   houtValue = (int)(Range * (hOctave + (float)hNote / 12));
 
 
-  mcpWrite(houtValue, 0);
+  mcpWrite(houtValue, Channel);
+  
 }
