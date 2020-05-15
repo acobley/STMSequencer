@@ -21,11 +21,11 @@
 */
 
 /*
- *  To setup BluePill:
- *  
- *  https://circuitdigest.com/microcontroller-projects/getting-started-with-stm32-development-board-stm32f103c8-using-arduino-ide
- *  
- */
+    To setup BluePill:
+
+    https://circuitdigest.com/microcontroller-projects/getting-started-with-stm32-development-board-stm32f103c8-using-arduino-ide
+
+*/
 
 
 #include "HardwareTimer.h"
@@ -51,10 +51,12 @@
 int DAC = PB6; //????
 int Gate1 = PB5;
 int Gate2 = PC13;
-byte CV1=1;
-byte CV2=0;
+byte CV1 = 1;
+byte CV2 = 0;
 char Modes[] = {'P', 'L', 'N', 'O', 'M'};
+char Modes2[]= {'P', 'S'};
 byte Mode = 0;
+byte Mode2=0;
 
 int encAVal, encALast, encBVal;
 int encAVal2, encALast2, encBVal2;
@@ -71,18 +73,25 @@ long BeatGateTime = 1000000L * 60 / Tempo;
 short NoteLength = 4;
 long SeqGateTime = BeatGateTime / NoteLength;
 long ms15 = 0015000L;
-short Timers[] = {3, 3, 3, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1};
-short BeatPos[] = {0, 3, 5, 6, 7, 9, 11, 12, 13};
-short Notes[] = {0, 2, 5, 0, 8, 0, 0, 10, 6, 2, 0, 10, 8};
-short Octave[] = {0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0};
+//short Timers[] = {3, 3, 3, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1};
+short Timers[] = {1, 1, 1, 2, 2, 1, 2, 2, 1, 1, 1, 1, 1};
+short calcBeatPos[32];
+short BeatPos[] = {0, 1, 2, 5, 6, 9, 10, 11, 12, 13};
+//short Notes[] = {0, 2, 5, 0, 8, 0, 0, 10, 6, 2, 0, 10, 8};
+short Notes[] = {10, 8, 1, 3, 8, 5, 3, 8, 5, 1, 3, 10, 8};
+//short Octave[] = {0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0};
+short Octave[] = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
 int count = 0;
 int ErasePos = -1;
 int bErasePos;
 int Beat = 1;
-int MaxBeat = 8;
-int countlength = 13;
-float NumberOfBeats=1.0;
+int MaxBeat = 10;
+int countlength = sizeof(Notes) / sizeof(short);
+float NumberOfBeats = 1.0;
 
+short NotePatterns [32][10];
+short TimerPatterns [32][10];
+short OctavePatterns [32][10];
 
 short encPos = Tempo;
 short NewEncPos = Tempo;
@@ -105,7 +114,27 @@ int CY = 0;
 int Width = 8;
 int Height = 8;
 
+void CalculateBeatCountArray() {
+  short TimerCount = 0;
+  short BeatCount = 1;
+  calcBeatPos[0] = 0;
+  float CurrentBeatLength = 0;
+  int countlength = sizeof(Timers) / sizeof(short);
+  for (TimerCount = 1; TimerCount < countlength; TimerCount++) {
 
+    CurrentBeatLength = CurrentBeatLength + (float) (1 / (float) Timers[TimerCount - 1]);
+
+    if ((CurrentBeatLength == (float)round(CurrentBeatLength))) {
+      calcBeatPos[BeatCount] = TimerCount;
+      BeatCount++;
+
+    }
+  }
+  MaxBeat = BeatCount;
+  for (int i = 0; i < BeatCount; i++) {
+    BeatPos[i] = calcBeatPos[i];
+  }
+}
 
 void SetupEncoders() {
   pinMode(encA, INPUT);
@@ -165,7 +194,7 @@ void SetupDacs() {
   SPI.begin();
   SPI.setBitOrder(MSBFIRST);
   pinMode(DAC, OUTPUT);
-  
+
   digitalWrite(DAC, HIGH);
 
 }
@@ -177,7 +206,7 @@ void SetupSwitches() {
   pinMode(BUTLED3, OUTPUT);
   pinMode(START, INPUT);
   pinMode(RESET, INPUT);
-  attachInterrupt(BUT1, iMode, FALLING);
+  attachInterrupt(BUT1, iMode2, FALLING);
   attachInterrupt(BUT2, iMode, FALLING);
   attachInterrupt(BUT3, interrupt, FALLING);
 
@@ -189,13 +218,13 @@ void SetupSwitches() {
   pinMode(Gate1, OUTPUT);
 }
 
-void BeatsNumber(){
-  float tmp=0.0;
-  int i=0;
+void BeatsNumber() {
+  float tmp = 0.0;
+  int i = 0;
   for (i = 0; i < countlength; i++) {
-     tmp=tmp  +1.0/(float)Timers[i];
+    tmp = tmp  + 1.0 / (float)Timers[i];
   }
-  NumberOfBeats=tmp;
+  NumberOfBeats = tmp;
 }
 
 void setup() {
@@ -205,10 +234,12 @@ void setup() {
   SetupDacs();
   SetupSwitches();
   BeatsNumber();
-  
+  CalculateBeatCountArray();
+
   DisplayBackground();
   DisplayTempo();
   DisplayMode();
+  DisplayMode2();
   DisplayNoteLength();
 
   SequenceGateTimer.pause();
@@ -217,6 +248,8 @@ void setup() {
   SequenceTimer.pause();
   BeatTimer.setCount(0);
   BeatTimer.pause();
+
+
 }
 
 
@@ -239,7 +272,7 @@ void SequenceGateOn() {
   WriteNote(Notes[count], Octave[count], CV1);
 
   // Display count
-  DisplayCount(count+1, 0, 0);
+  DisplayCount(count + 1, 0, 0);
 
   //Display Cursor
 
@@ -255,15 +288,15 @@ void SequenceGateOn() {
   }
 
   Refresh();
-  ErasePos++;  
-  if (ErasePos>=countlength)
-     ErasePos=0;
+  ErasePos++;
+  if (ErasePos >= countlength)
+    ErasePos = 0;
   count++;
   if (count >= countlength) {
     count = 0;
     ErasePos = countlength - 1;
   }
-  
+
 }
 
 
@@ -359,6 +392,27 @@ void iMode() {
   }
   DisplayMode();
 }
+void iMode2() {
+  Mode2++;
+  if (Mode2 > 1) {
+    Mode2 = 0;
+
+  }
+  DisplayMode2();
+}
+
+
+void DisplayMode() {
+  DisplayChar(Modes[Mode] - 32, 4, 0);
+  Refresh();
+
+}
+
+void DisplayMode2() {
+  DisplayChar(Modes2[Mode2] - 32, 6, 0);
+  Refresh();
+
+}
 
 void IntReset() {
   count = 0;
@@ -409,13 +463,13 @@ void handleEnc1() {
 
   NewEncPos = encodeVal(encPos);
   if (NewEncPos != encPos) {
-    switch (Mode) {
+    switch (Mode2) {
       case 0: encPos = NewEncPos;
         if (encPos < 1) {
           encPos = 1;
         }
-        if (encPos > 180 ) {
-          encPos = 180;
+        if (encPos > 240 ) {
+          encPos = 240;
         }
         setTempo(encPos);
         DisplayTempo() ;
@@ -451,26 +505,29 @@ void handleEnc2() {
 }
 
 
-void DisplayBeatCount(){
+void DisplayBeatCount() {
   BeatsNumber();
-  int CX=Width * 7;
-  int CY= Height * 5;
+  int CX = Width * 7;
+  int CY = Height * 5;
   Cursor(CX, CY);
-  Erase(CX, CY, CX + Width*5 , CY + Height);
+  Erase(CX, CY, CX + Width * 5 , CY + Height);
   char sTmp[6];
-  sprintf(sTmp,"%5.2f",NumberOfBeats);
+  sprintf(sTmp, "%5.2f", NumberOfBeats);
   Print(sTmp);
   Refresh();
-  
+
 }
 
 
 void DisplayChar(char C, byte x, byte y) {
   CX = Width * x;
   CY = Height * y;
-  Cursor(CX, CY);
+   noInterrupts();
   Erase(CX, CY, CX + Width , CY + Height);
+  Cursor(CX, CY);
+  
   _WriteChar(C);
+  interrupts();
 }
 
 //Display two digit integer
@@ -486,14 +543,9 @@ void DisplayCount(byte Count, byte x, byte y) {
   Refresh();
 
 }
-void DisplayMode() {
-  DisplayChar(Modes[Mode] - 32, 4, 0);
-  Refresh();
-
-}
 
 void DisplayTempo() {
-  int CX = 7 * 8;
+  int CX = 8 * 8;
   int CY = 0;
   Cursor(CX, CY);
   Erase(CX, CY, CX + Width * 3, CY + Height);
@@ -539,7 +591,7 @@ void DisplayBackground() {
 
 
 
-void mcpWrite(int value,int Channel) {
+void mcpWrite(int value, int Channel) {
   //CS
   noInterrupts();
   digitalWrite(DAC, LOW);
@@ -567,5 +619,5 @@ void WriteNote(int Note, int Octave, int Channel) {
 
 
   mcpWrite(houtValue, Channel);
-  
+
 }
