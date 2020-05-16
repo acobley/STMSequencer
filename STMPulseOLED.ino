@@ -66,6 +66,8 @@ HardwareTimer SequenceGateTimer(2);
 HardwareTimer BeatTimer(3);
 HardwareTimer BeatGateTimer(4);
 
+const short MaxPatternLength=16;
+const short NumPatterns=2;
 
 int Tempo = 120;
 long BaseTime = 1000000L * 60 / Tempo;
@@ -73,14 +75,13 @@ long BeatGateTime = 1000000L * 60 / Tempo;
 short NoteLength = 4;
 long SeqGateTime = BeatGateTime / NoteLength;
 long ms15 = 0015000L;
-//short Timers[] = {3, 3, 3, 2, 2, 1, 1, 2, 2, 2, 2, 1, 1};
-short Timers[] = {1, 1, 1, 2, 2, 1, 2, 2, 1, 1, 1, 1, 1};
-short calcBeatPos[32];
-short BeatPos[] = {0, 1, 2, 5, 6, 9, 10, 11, 12, 13};
-//short Notes[] = {0, 2, 5, 0, 8, 0, 0, 10, 6, 2, 0, 10, 8};
-short Notes[] = {10, 8, 1, 3, 8, 5, 3, 8, 5, 1, 3, 10, 8};
-//short Octave[] = {0, 0, 0, 0, 0, 1, 1, 0, 0, 1, 1, 0, 0};
-short Octave[] = {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0};
+
+short Timers[MaxPatternLength] ;
+short calcBeatPos[MaxPatternLength];
+short BeatPos[MaxPatternLength] ;
+short Notes[MaxPatternLength] ;
+short Octave[MaxPatternLength] ;
+short Volume[MaxPatternLength] ;
 int count = 0;
 int ErasePos = -1;
 int bErasePos;
@@ -88,10 +89,25 @@ int Beat = 1;
 int MaxBeat = 10;
 int countlength = sizeof(Notes) / sizeof(short);
 float NumberOfBeats = 1.0;
+short CurrentPattern=0;
 
-short NotePatterns [32][10];
-short TimerPatterns [32][10];
-short OctavePatterns [32][10];
+short PatternLengths[NumPatterns]={13,13};
+short NotePatterns [ NumPatterns][MaxPatternLength]={
+  {10, 8, 1, 3, 8, 5, 3, 8, 5, 1, 3, 10, 8},
+  {10, 8, 1, 3, 8, 5, 3, 8, 5, 1, 3, 10, 8}
+};
+short TimerPatterns [ NumPatterns][MaxPatternLength]={
+  {1, 1, 1, 2, 2, 1, 2, 2, 1, 1, 1, 1, 1},
+  {1, 2, 2, 2, 4, 4, 4, 4, 1, 1, 2, 1, 1}
+};
+short OctavePatterns [ NumPatterns][MaxPatternLength]={
+  {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+  {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0}
+};
+short VolumePatterns[ NumPatterns][MaxPatternLength]={
+  {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+  {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0}
+};
 
 short encPos = Tempo;
 short NewEncPos = Tempo;
@@ -114,12 +130,36 @@ int CY = 0;
 int Width = 8;
 int Height = 8;
 
+
+void MakeActivePattern(short Pattern){
+  int i=0;
+  CurrentPattern=Pattern;
+  countlength=PatternLengths[Pattern];
+   for (i=0;i <MaxPatternLength;i++){
+    if (i<PatternLengths[Pattern]){
+      Notes[i]=NotePatterns[Pattern][i];
+      Timers[i]=TimerPatterns[Pattern][i];
+      Octave[i]=TimerPatterns[Pattern][i];
+      Volume[i]=VolumePatterns[Pattern][i];
+    }
+   }
+   CalculateBeatCountArray();
+   BeatsNumber();
+   DisplayBackground();
+  DisplayTempo();
+  DisplayMode();
+  DisplayMode2();
+  DisplayNoteLength();
+  DisplaySeqNum();
+  
+}
+
 void CalculateBeatCountArray() {
   short TimerCount = 0;
   short BeatCount = 1;
   calcBeatPos[0] = 0;
   float CurrentBeatLength = 0;
-  int countlength = sizeof(Timers) / sizeof(short);
+  int countlength = PatternLengths[CurrentPattern];
   for (TimerCount = 1; TimerCount < countlength; TimerCount++) {
 
     CurrentBeatLength = CurrentBeatLength + (float) (1 / (float) Timers[TimerCount - 1]);
@@ -228,19 +268,16 @@ void BeatsNumber() {
 }
 
 void setup() {
-
-  SetupEncoders();
   SetupOLED();
+  MakeActivePattern(0);
+  SetupEncoders();
+  
   SetupDacs();
   SetupSwitches();
-  BeatsNumber();
-  CalculateBeatCountArray();
 
-  DisplayBackground();
-  DisplayTempo();
-  DisplayMode();
-  DisplayMode2();
-  DisplayNoteLength();
+  
+  
+
 
   SequenceGateTimer.pause();
   BeatGateTimer.pause();
@@ -393,10 +430,16 @@ void iMode() {
   DisplayMode();
 }
 void iMode2() {
+  if (Mode2==1){
+    MakeActivePattern(CurrentPattern);
+    encPos=CurrentPattern;
+  }else{
+    encPos=Tempo;
+  }
+  
   Mode2++;
   if (Mode2 > 1) {
     Mode2 = 0;
-
   }
   DisplayMode2();
 }
@@ -414,6 +457,16 @@ void DisplayMode2() {
 
 }
 
+void DisplaySeqNum() {
+  int CX = 1 * 8;
+  int CY = 6*8;
+  Cursor(CX, CY);
+  Erase(CX, CY, CX + Width * 3, CY + Height);
+  Print(CurrentPattern);
+  Refresh();
+
+
+}
 void IntReset() {
   count = 0;
 }
@@ -464,7 +517,7 @@ void handleEnc1() {
   NewEncPos = encodeVal(encPos);
   if (NewEncPos != encPos) {
     switch (Mode2) {
-      case 0: encPos = NewEncPos;
+      case 0: encPos = NewEncPos; //Tempo
         if (encPos < 1) {
           encPos = 1;
         }
@@ -473,6 +526,17 @@ void handleEnc1() {
         }
         setTempo(encPos);
         DisplayTempo() ;
+        break;
+        case 1: // Pattern select
+        encPos = NewEncPos;
+        if (encPos < 1) {
+          encPos = 0;
+        }
+        if (encPos >= NumPatterns ) {
+          encPos = NumPatterns-1;
+        }
+        CurrentPattern=encPos;
+        DisplaySeqNum();
         break;
       default: break;
     }
@@ -562,6 +626,8 @@ void DisplayNoteLength() {
 }
 
 void DisplayBackground() {
+  ClearBuffer();
+  Refresh();
   CX = 54;
   CY = 0;
   Line(CX - 1, CY, CX - 1, CY + Height + 1);
