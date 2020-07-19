@@ -33,17 +33,7 @@
 #include "fonts.h"
 #include <EEPROM.h>
 
-struct SysState {
-  int Tempo ;
-  short GateLength;
-  short CurrentPattern;
-};
 
-
-
-  
-
-//SW
 
 
 //Encoder
@@ -65,9 +55,9 @@ int Gate2 = PC13;
 byte CV1 = 1;
 byte CV2 = 0;
 char Modes[] = {'P', 'L', 'N', 'O', 'M'};
-char Modes2[]= {'P', 'S'};
+char Modes2[] = {'P', 'S'};
 byte Mode = 0;
-byte Mode2=0;
+byte Mode2 = 0;
 
 int encAVal, encALast, encBVal;
 int encAVal2, encALast2, encBVal2;
@@ -77,8 +67,7 @@ HardwareTimer SequenceGateTimer(2);
 HardwareTimer BeatTimer(3);
 HardwareTimer BeatGateTimer(4);
 
-const short MaxPatternLength=16;
-const short NumPatterns=2;
+
 
 int Tempo = 120;
 long BaseTime = 1000000L * 60 / Tempo;
@@ -87,38 +76,59 @@ short GateLength = 4;
 long SeqGateTime = BeatGateTime / GateLength;
 long ms15 = 0015000L;
 
+
+int count = 0;
+int ErasePos = -1;
+int bErasePos;
+int Beat = 1;
+int MaxBeat = 10;
+
+float NumberOfBeats = 1.0;
+short CurrentPattern = 0;
+short NextPattern = -1;
+
+const short MaxPatternLength = 16;
+const short NumPatterns = 6;
 short Timers[MaxPatternLength] ;
 short calcBeatPos[MaxPatternLength];
 short BeatPos[MaxPatternLength] ;
 short Notes[MaxPatternLength] ;
 short Octave[MaxPatternLength] ;
 short Volume[MaxPatternLength] ;
-int count = 0;
-int ErasePos = -1;
-int bErasePos;
-int Beat = 1;
-int MaxBeat = 10;
 int countlength = sizeof(Notes) / sizeof(short);
-float NumberOfBeats = 1.0;
-short CurrentPattern=0;
-short NextPattern=-1;
 
-short PatternLengths[NumPatterns]={13,13};
-short NotePatterns [ NumPatterns][MaxPatternLength]={
+short PatternLengths[NumPatterns] = {13, 13, 4, 5,4, 5};
+short NotePatterns [ NumPatterns][MaxPatternLength] = {
   {10, 8, 1, 3, 8, 5, 3, 8, 5, 1, 3, 10, 8},
-  {10, 8, 1, 3, 8, 5, 3, 8, 5, 1, 3, 10, 8}
+  {10, 8, 1, 3, 8, 5, 3, 8, 5, 1, 3, 10, 8},
+  {3, 3, 10, 1}, 
+  {3, 3, 1,10, 1},
+  {10, 10, 5, 8},
+  {10, 10, 8, 5, 8}
 };
-short TimerPatterns [ NumPatterns][MaxPatternLength]={
+short TimerPatterns [ NumPatterns][MaxPatternLength] = {
   {1, 1, 1, 2, 2, 1, 2, 2, 1, 1, 1, 1, 1},
-  {1, 2, 2, 2, 4, 4, 4, 4, 1, 1, 2, 1, 1}
+  {1, 2, 2, 2, 4, 4, 4, 4, 1, 1, 2, 1, 1},
+  {1, 1, 1, 1},
+  {1, 1, 1, 2,2},
+  {1, 1, 1, 1},
+  {1, 1, 1, 2, 2}
 };
-short OctavePatterns [ NumPatterns][MaxPatternLength]={
+short OctavePatterns [ NumPatterns][MaxPatternLength] = {
   {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-  {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0}
+  {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+  {1, 1, 2, 2},
+  {1, 1, 2, 2,2},
+  {1, 1, 2, 2},
+  {1, 1, 2, 2, 2},
 };
-short VolumePatterns[ NumPatterns][MaxPatternLength]={
+short VolumePatterns[ NumPatterns][MaxPatternLength] = {
   {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
-  {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0}
+  {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
+  {1, 1, 1, 1},
+  {1, 1, 1, 1, 1},
+  {1, 1, 1, 1},
+  {1, 1, 1, 1, 1}
 };
 
 short encPos = Tempo;
@@ -143,27 +153,27 @@ int Width = 8;
 int Height = 8;
 
 
-void MakeActivePattern(short Pattern){
-  int i=0;
-  CurrentPattern=Pattern;
-  countlength=PatternLengths[Pattern];
-   for (i=0;i <MaxPatternLength;i++){
-    if (i<PatternLengths[Pattern]){
-      Notes[i]=NotePatterns[Pattern][i];
-      Timers[i]=TimerPatterns[Pattern][i];
-      Octave[i]=TimerPatterns[Pattern][i];
-      Volume[i]=VolumePatterns[Pattern][i];
+void MakeActivePattern(short Pattern) {
+  int i = 0;
+  CurrentPattern = Pattern;
+  countlength = PatternLengths[Pattern];
+  for (i = 0; i < MaxPatternLength; i++) {
+    if (i < PatternLengths[Pattern]) {
+      Notes[i] = NotePatterns[Pattern][i];
+      Timers[i] = TimerPatterns[Pattern][i];
+      Octave[i] = OctavePatterns[Pattern][i];
+      Volume[i] = VolumePatterns[Pattern][i];
     }
-   }
-   CalculateBeatCountArray();
-   BeatsNumber();
-   DisplayBackground();
+  }
+  CalculateBeatCountArray();
+  BeatsNumber();
+  DisplayBackground();
   DisplayTempo();
   DisplayMode();
   DisplayMode2();
   DisplayGateLength();
-  DisplaySeqNum();
-  
+  DisplaySeqNum(CurrentPattern);
+
 }
 
 
@@ -271,7 +281,7 @@ void SetupSwitches() {
   attachInterrupt(BUT2, iMode, FALLING);
   attachInterrupt(BUT3, interrupt, FALLING);
 
-  attachInterrupt(START, interrupt, RISING);
+  attachInterrupt(START, StartInterrupt, RISING);
 
   attachInterrupt(RESET, IntReset, RISING);
 
@@ -282,6 +292,14 @@ void SetupSwitches() {
 
 
 void setup() {
+  SequenceGateTimer.setChannel2Mode(TIMER_OUTPUT_COMPARE);
+  SequenceGateTimer.setCompare(TIMER_CH2, 1);
+  BeatTimer.setChannel1Mode(TIMER_OUTPUT_COMPARE);
+  BeatTimer.setCompare(TIMER_CH1, 1);  // Interrupt 1 count after each update
+  SequenceTimer.setChannel3Mode(TIMER_OUTPUT_COMPARE);
+  SequenceTimer.setCompare(TIMER_CH3, 1);  // Interrupt 1 count after each update
+  BeatGateTimer.setChannel4Mode(TIMER_OUTPUT_COMPARE);
+  BeatGateTimer.setCompare(TIMER_CH4, 1); 
   ReadEEPROM();
   setTempo(Tempo);
   SetupOLED();
@@ -289,6 +307,7 @@ void setup() {
   SetupEncoders();
   SetupDacs();
   SetupSwitches();
+  
   
   SequenceGateTimer.pause();
   BeatGateTimer.pause();
@@ -310,6 +329,7 @@ void SequenceGateOn() {
   digitalWrite(Gate1, true);
   long Time = (long)(BaseTime / Timers[count]);
   SequenceTimer.setPeriod(Time);
+  
   SequenceTimer.refresh();
   SequenceTimer.resume();
   SequenceGateTimer.refresh();
@@ -343,10 +363,10 @@ void SequenceGateOn() {
   if (count >= countlength) {
     count = 0;
     ErasePos = countlength - 1;
-    if (NextPattern>0){
-    MakeActivePattern(NextPattern);
-    DisplaySeqNum();
-    NextPattern=-1;
+    if ((NextPattern >= 0) && (NextPattern < 50)) {
+      MakeActivePattern(NextPattern);
+      DisplaySeqNum(CurrentPattern);
+      NextPattern = -1;
     }
   }
 
@@ -362,21 +382,16 @@ void BeatGateOn() {
   BeatGateTimer.resume();
   BeatTimer.resume();
 
-
   DisplayCount(Beat, 14, 0);
-
   Cursor(9 * BeatPos[Beat - 1], 16);
   DrawMode(NORMAL);
   _WriteChar('_' - 32);
-
   bErasePos = Beat - 1;
   if (bErasePos <= 0)
     bErasePos = MaxBeat;
-
   Cursor(9 * BeatPos[bErasePos - 1], 16);
   DrawMode(CLEAR);
   _WriteChar('_' - 32);
-
   Refresh();
   Beat++;
   if (Beat > MaxBeat)
@@ -424,8 +439,29 @@ void Stop() {
 }
 
 boolean Running = false;
+unsigned long TempoMicros = micros();
+boolean Led=false;
+unsigned long micro1=1000000;
+
+void StartInterrupt(){
+  interrupt();
+  /*
+  noInterrupts;
+  
+  unsigned long Now=micros();
+  unsigned long Diff= Now-TempoMicros ;
+  TempoMicros =Now;
+  
+  int dTempo=(int)floor(60L*micro1/Diff);
+  DisplayDTempo(dTempo);
+  Led=!Led;
+  digitalWrite(BUTLED3, Led);
+  interrupts;
+  */
+}
+
 void interrupt() {
-  //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
+  
   Running = !Running; //invert state
   if (Running) {
     Start();
@@ -447,23 +483,59 @@ void iMode() {
   DisplayMode();
 }
 
+unsigned long currentMillis = millis();
+unsigned long previousMillis = 0;
+const long interval = 500;
+
 void iMode2() {
-  if (Mode2==1){
-    NextPattern=encPos;
-    encPos=Tempo;
-    
-  }else{
-    encPos=CurrentPattern;
+  noInterrupts();
+  currentMillis = millis();
+  //DisplayTime(currentMillis,previousMillis);
+  if (currentMillis - previousMillis >= interval) {
+    previousMillis = currentMillis;
+
+    if (Mode2 == 1) {
+
+      NextPattern = encPos;
+      encPos = Tempo;
+      Mode2 = 0;
+
+    } else {
+      
+      encPos = CurrentPattern;
+      Mode2 = 1;
+      
+    }
+
+
+    DisplayMode2();
   }
-  
-  Mode2++;
-  if (Mode2 > 1) {
-    Mode2 = 0;
-  }
-  DisplayMode2();
+  interrupts();
 }
 
+void DisplayTime(unsigned long currentMillis,unsigned long previousMillis){
+  int CX = 0 * 8;
+  int CY = 5 * 8;
+  Cursor(CX, CY);
+  Erase(CX, CY, CX + Width * 15, CY + Height);
+  char sTmp[6];
+  sprintf(sTmp, " %i, %i", previousMillis,currentMillis);
+  Print(sTmp);
+  Refresh();
+  
+}
 
+void DisplayGate(long GateTime){
+  int CX = 0 * 8;
+  int CY = 5 * 8;
+  Cursor(CX, CY);
+  Erase(CX, CY, CX + Width * 15, CY + Height);
+  char sTmp[6];
+  sprintf(sTmp, " %i", GateTime);
+  Print(sTmp);
+  Refresh();
+  
+}
 void DisplayMode() {
   DisplayChar(Modes[Mode] - 32, 4, 0);
   Refresh();
@@ -487,7 +559,7 @@ void setTempo(int newTempo) {
   Tempo = newTempo;
   BaseTime = 1000000L * 60 / Tempo;
   BeatGateTime = 1000000L * 60 / Tempo;
-
+  DisplayGate( BeatGateTime);
 }
 
 
@@ -537,16 +609,16 @@ void handleEnc1() {
         setTempo(encPos);
         DisplayTempo() ;
         break;
-        case 1: // Pattern select
+      case 1: // Pattern select
         encPos = NewEncPos;
         if (encPos < 1) {
           encPos = 0;
         }
         if (encPos >= NumPatterns ) {
-          encPos = NumPatterns-1;
+          encPos = NumPatterns - 1;
         }
-        
-        
+        DisplaySeqNum(encPos);
+
         break;
       default: break;
     }
@@ -578,13 +650,13 @@ void handleEnc2() {
   }
 }
 
-void DisplaySeqNum() {
+void DisplaySeqNum(short DisplayNum) {
   int CX = 0 * 8;
-  int CY = 6*8;
+  int CY = 7 * 8;
   Cursor(CX, CY);
   Erase(CX, CY, CX + Width * 6, CY + Height);
   char sTmp[6];
-   sprintf(sTmp, "Seq %i", CurrentPattern);
+  sprintf(sTmp, "Seq %i", DisplayNum);
   Print(sTmp);
   Refresh();
 }
@@ -592,7 +664,7 @@ void DisplaySeqNum() {
 void DisplayBeatCount() {
   BeatsNumber();
   int CX = Width * 7;
-  int CY = Height * 6;
+  int CY = Height * 7;
   Cursor(CX, CY);
   Erase(CX, CY, CX + Width * 8 , CY + Height);
   char sTmp[6];
@@ -606,10 +678,10 @@ void DisplayBeatCount() {
 void DisplayChar(char C, byte x, byte y) {
   CX = Width * x;
   CY = Height * y;
-   noInterrupts();
+  noInterrupts();
   Erase(CX, CY, CX + Width , CY + Height);
   Cursor(CX, CY);
-  
+
   _WriteChar(C);
   interrupts();
 }
@@ -634,6 +706,15 @@ void DisplayTempo() {
   Cursor(CX, CY);
   Erase(CX, CY, CX + Width * 3, CY + Height);
   Print(Tempo);
+  Refresh();
+}
+
+void DisplayDTempo(int iTempo) {
+  int CX = 8 * 8;
+  int CY = 6*8;
+  Cursor(CX, CY);
+  Erase(CX, CY, CX + Width * 3, CY + Height);
+  Print(iTempo);
   Refresh();
 }
 
@@ -709,28 +790,26 @@ void WriteNote(int Note, int Octave, int Channel) {
 }
 
 
-void ReadEEPROM(){
- int addr = 0;
-   Tempo=EEPROM.read(addr);
-   addr = addr + 1;
-   GateLength =EEPROM.read(addr);
-   addr = addr + 1;
-   CurrentPattern =EEPROM.read(addr);
-   encPos = Tempo;
-    NewEncPos = Tempo;
-   encPos2 = GateLength;
-    NewEncPos2 = GateLength;
-}
-void WriteEEProm(){
+void ReadEEPROM() {
   int addr = 0;
-   
-    
-   EEPROM.write(addr,Tempo);
-    addr = addr + 1;
-
-  EEPROM.write(addr,GateLength);
+  Tempo = EEPROM.read(addr);
   addr = addr + 1;
-  EEPROM.write(addr,CurrentPattern);
-  
-   
+  GateLength = EEPROM.read(addr);
+  addr = addr + 1;
+  CurrentPattern = EEPROM.read(addr);
+  if (CurrentPattern < 0)
+    CurrentPattern = 0;
+  encPos = Tempo;
+  NewEncPos = Tempo;
+  encPos2 = GateLength;
+  NewEncPos2 = GateLength;
+}
+
+void WriteEEProm() {
+  int addr = 0;
+  EEPROM.write(addr, Tempo);
+  addr = addr + 1;
+  EEPROM.write(addr, GateLength);
+  addr = addr + 1;
+  EEPROM.write(addr, CurrentPattern);
 }
