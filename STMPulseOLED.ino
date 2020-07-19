@@ -292,6 +292,7 @@ void SetupSwitches() {
 
 
 void setup() {
+  //These set the timer modes to be correct for accurate timing
   SequenceGateTimer.setChannel2Mode(TIMER_OUTPUT_COMPARE);
   SequenceGateTimer.setCompare(TIMER_CH2, 1);
   BeatTimer.setChannel1Mode(TIMER_OUTPUT_COMPARE);
@@ -300,6 +301,7 @@ void setup() {
   SequenceTimer.setCompare(TIMER_CH3, 1);  // Interrupt 1 count after each update
   BeatGateTimer.setChannel4Mode(TIMER_OUTPUT_COMPARE);
   BeatGateTimer.setCompare(TIMER_CH4, 1); 
+  
   ReadEEPROM();
   setTempo(Tempo);
   SetupOLED();
