@@ -88,7 +88,7 @@ short CurrentPattern = 0;
 short NextPattern = -1;
 
 const short MaxPatternLength = 16;
-const short NumPatterns = 6;
+
 short Timers[MaxPatternLength] ;
 short calcBeatPos[MaxPatternLength];
 short BeatPos[MaxPatternLength] ;
@@ -98,8 +98,8 @@ short Volume[MaxPatternLength] ;
 int countlength = sizeof(Notes) / sizeof(short);
 
 const short NoteLengths[6] = {0, 1, 2, 4, 8, 16};
-
-short PatternLengths[NumPatterns] = {13, 13, 4, 5, 4, 5};
+const short NumPatterns = 7;
+short PatternLengths[NumPatterns] = {13, 13, 4, 5, 4, 5,4};
 short NotePatterns [ NumPatterns][MaxPatternLength] = {
 
   {10, 8, 1, 3, 8, 5, 3, 8, 5, 1, 3, 10, 8},
@@ -107,7 +107,8 @@ short NotePatterns [ NumPatterns][MaxPatternLength] = {
   {3, 3, 10, 1},
   {3, 3, 1, 10, 1},
   {10, 10, 5, 8},
-  {10, 10, 8, 5, 8}
+  {10, 10, 8, 5, 8},
+  {3, 3, 10, 1},
 };
 short TimerPatterns [ NumPatterns][MaxPatternLength] = {
  
@@ -116,7 +117,8 @@ short TimerPatterns [ NumPatterns][MaxPatternLength] = {
   {3, 3, 3, 3},
   {2, 2, 2, 3, 3},
   {3, 3, 3, 3},
-  {2, 2, 2, 3, 3}
+  {2, 2, 2, 3, 3},
+  {1,1,1,1},
 };
 short OctavePatterns [ NumPatterns][MaxPatternLength] = {
  
@@ -125,7 +127,8 @@ short OctavePatterns [ NumPatterns][MaxPatternLength] = {
   {1, 1, 2, 2},
   {1, 1, 2, 2, 2},
   {1, 1, 2, 2},
-  {1, 1, 2, 2, 2}
+  {1, 1, 2, 2, 2},
+  {1, 1, 2, 2},
 };
 short TripletPatterns[ NumPatterns][MaxPatternLength] = {
 
@@ -134,7 +137,8 @@ short TripletPatterns[ NumPatterns][MaxPatternLength] = {
   {0, 0, 0, 0},
   {0, 0, 0, 0, 0},
   {0, 0, 0, 0},
-  {0, 0, 0, 0, 0}
+  {0, 0, 0, 0, 0},
+  {0, 0, 0, 0},
 };
 short VolumePatterns[ NumPatterns][MaxPatternLength] = {
 
@@ -143,7 +147,8 @@ short VolumePatterns[ NumPatterns][MaxPatternLength] = {
   {1, 1, 1, 1},
   {1, 1, 1, 1, 1},
   {1, 1, 1, 1},
-  {1, 1, 1, 1, 1}
+  {1, 1, 1, 1, 1},
+  {1, 1, 1, 1},
 };
 
 short encPos = Tempo;
