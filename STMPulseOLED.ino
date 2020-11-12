@@ -29,89 +29,32 @@
 
 
 #include "HardwareTimer.h"
-#include "SPI.h"
-#include "fonts.h"
+#include "Setup.h"
+
+void BeatsNumber() {
+  float tmp = 0.0;
+  int i = 0;
+  for (i = 0; i < countlength; i++) {
+    if (Timers[i] >= 3) {
+      tmp = tmp  + 1.0 / (float)NoteLengths[Timers[i]];
+    } else {
+      if (Timers[i] == 1) {
+        tmp = tmp  + 4;
+      } else {
+        if (Timers[i] == 2) {
+          tmp = tmp  + 2;
+        }
+      }
+    }
+  }
+  NumberOfBeats = tmp;
+}
+
+#include "Display.h"
 #include <EEPROM.h>
 
 
 
-
-//Encoder
-#define encA PB0
-#define encB PB1
-
-#define enc2A PB10 //11
-#define enc2B PB11 //10
-#define BUT1 PA0
-#define BUT2 PB15
-#define BUT3 PB7
-#define BUTLED3 PA12
-#define START PA2
-#define RESET PA1
-
-int DAC = PB6; //????
-int Gate1 = PB5;
-int Gate2 = PC13;
-byte CV1 = 1;
-byte CV2 = 0;
-char Modes[] = {'P', 'L', 'N', 'O', 'M'};
-char Modes2[] = {'P', 'S'};
-byte Mode = 0;
-byte Mode2 = 0;
-
-int encAVal, encALast, encBVal;
-int encAVal2, encALast2, encBVal2;
-
-HardwareTimer SequenceTimer(1);
-HardwareTimer SequenceGateTimer(2);
-HardwareTimer BeatTimer(3);
-HardwareTimer BeatGateTimer(4);
-
-long ClockF = 72000000;
-struct ClockStruct {
-  char Name[15];
-  int Psc = 0;
-  int Arr = 0;
-};
-
-struct PWMStruct{
-  double PWM1=1;
- double PWM2=1;
-};
-
-PWMStruct PWMS;
-int Tempo = 120;
-long BaseTime = 1000000L * (4 * 60) / Tempo;
-long BeatTime = 1000000L * 60 / Tempo;
-short GateLength = 4;
-long SeqGateTime = BaseTime / GateLength;
-long ms15 = 015000L;
-
-
-int PlaceCount = 0;
-int ErasePos = -1;
-int bErasePos;
-int Beat = 1;
-int MaxBeat = 10;
-
-float NumberOfBeats = 1.0;
-short CurrentPattern = 0;
-short NextPattern = -1;
-const short MinTempo = 30;
-const short MaxTempo = 300;
-
-const short MaxPatternLength = 16;
-
-short Timers[MaxPatternLength] ;
-short calcBeatPos[MaxPatternLength];
-short BeatPos[MaxPatternLength] ;
-short Notes[MaxPatternLength] ;
-short Octave[MaxPatternLength] ;
-short Volume[MaxPatternLength] ;
-int countlength = sizeof(Notes) / sizeof(short);
-
-const short NoteLengths[6] = {0, 1, 2, 4, 8, 16};
-const short NumPatterns = 7;
 short PatternLengths[NumPatterns] = {13, 13, 4, 5, 4, 5, 4};
 short NotePatterns [ NumPatterns][MaxPatternLength] = {
 
@@ -164,51 +107,95 @@ short VolumePatterns[ NumPatterns][MaxPatternLength] = {
   {1, 1, 1, 1},
 };
 
-short encPos = Tempo;
-short NewEncPos = Tempo;
-short encPos2 = GateLength;
-short NewEncPos2 = GateLength;
-
-
-
-
-//float Range = 819.2; // (2^12/5)
-float Range = 1365.33333; // (2^12/3)
-
-volatile int hKey ;
-volatile int hOctave;
-volatile int hNote;
-volatile int houtValue;
-
-int CX = 0;
-int CY = 0;
-int Width = 8;
-int Height = 8;
-
-
 
 
 //Low level routines to handle the timers.
 //See https://www.st.com/content/ccc/resource/training/technical/product_training/c4/1b/56/83/3a/a1/47/64/STM32L4_WDG_TIMERS_GPTIM.pdf/files/STM32L4_WDG_TIMERS_GPTIM.pdf/jcr:content/translations/en.STM32L4_WDG_TIMERS_GPTIM.pdf
 //Page 31 and 32
 
-double Div=1/72.0;
-double PWM1=1;
-double PWM2=1;
-void CalcTPeriod(ClockStruct *Clock, long Time, HardwareTimer myTimer,PWMStruct *PWMS) {
+double Div = 1 / 72.0;
+double PWM1 = 1;
+double PWM2 = 1;
+void CalcTPeriod(ClockStruct *Clock, long Period, HardwareTimer myTimer, PWMStruct *PWMS) {
+
   Clock->Psc = 1;
   Clock->Arr = 0;
-  Clock->Arr = Time/(Div*Clock->Psc);
+  Clock->Arr = Period / (Div * Clock->Psc);
   while (Clock->Arr >= 65535) {
     Clock->Psc = Clock->Psc + 1;
-    Clock->Arr = Time/(Div*Clock->Psc);
-    
+    Clock->Arr = Period / (Div * Clock->Psc);
+
   }
+  myTimer.setPrescaleFactor(Clock->Psc);
+  myTimer.setOverflow(Clock->Arr);
+
+  PWMS->PWM1 = (double)((double)Period / (double)15000L);
+  PWMS->PWM2 = (double)((double)Period / (double)(Period - 15000L));
+  //myTimer.setCompare(TIMER_CH1, Clock->Arr / PWMS->PWM1);
+  myTimer.refresh();
+
+  //DisplayTime(Period,4);
+  //DisplayTime(Clock->Psc,Clock->Arr,5);
+  //DisplayTime(Clock->Arr / PWMS->PWM1, Clock->Arr / PWMS->PWM2,6);
+
 }
-void SetUpTimer(HardwareTimer myTimer, voidFuncPtr handler, timer_mode tm) {
-  myTimer.pause();
-  myTimer.setMode(TIMER_CH1, tm);
-  myTimer.attachInterrupt(TIMER_CH1, handler);
+
+void CalcTPeriod(ClockStruct *Clock, long Period, HardwareTimer myTimer, PWMStruct *PWMS, long onTime) {
+
+  Clock->Psc = 1;
+  Clock->Arr = 0;
+  Clock->Arr = Period / (Div * Clock->Psc);
+  while (Clock->Arr >= 65535) {
+    Clock->Psc = Clock->Psc + 1;
+    Clock->Arr = Period / (Div * Clock->Psc);
+
+  }
+  myTimer.setPrescaleFactor(Clock->Psc);
+  myTimer.setOverflow(Clock->Arr);
+
+  PWMS->PWM1 = (double)((double)Period / (double)onTime);
+  PWMS->PWM2 = (double)((double)Period / (double)(Period - onTime));
+  //myTimer.setCompare(TIMER_CH1, Clock->Arr / PWMS->PWM1);
+  myTimer.refresh();
+
+  DisplayTime(Period, 4);
+  DisplayTime(Clock->Psc, Clock->Arr, 5);
+  DisplayTime(Clock->Arr / PWMS->PWM1, Clock->Arr / PWMS->PWM2, 6);
+
+}
+
+void CalcRatios(ClockStruct *Clock, long Period, PWMStruct *PWMS, long onTime) {
+
+  PWMS->PWM1 = (double)((double)Period / (double)onTime);
+  PWMS->PWM2 = (double)((double)Period / (double)(Period - onTime));
+  //myTimer.setCompare(TIMER_CH1, Clock->Arr / PWMS->PWM1);
+  DisplayTime(Period, onTime, 4);
+  DisplayTime(Clock->Psc, Clock->Arr, 5);
+  DisplayTime(Clock->Arr / PWMS->PWM1, Clock->Arr / PWMS->PWM2, 6);
+
+}
+
+void SetupSwitches() {
+  pinMode(BUT1, INPUT);
+  pinMode(BUT2, INPUT);
+  pinMode(STARTBUT, INPUT);
+  pinMode(BUTLED3, OUTPUT);
+  pinMode(START, INPUT);
+  pinMode(RESET, INPUT);
+  attachInterrupt(BUT1, iMode2, FALLING);
+  attachInterrupt(BUT2, iMode, FALLING);
+  attachInterrupt(STARTBUT, StartButtonInterrupt, FALLING);
+  attachInterrupt(START, StartInterrupt, RISING);
+  attachInterrupt(RESET, IntReset, RISING);
+
+}
+
+void SetupTimers() {
+  //These set the timer modes to be correct for accurate timing
+  // See http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/latest/lang/api/hardwaretimer.html
+
+  SetUpTimer(SequenceTimer, SequenceGateOn, TIMER_OUTPUT_COMPARE);
+  SetUpTimer(BeatTimer, BeatGate, TIMER_OUTPUT_COMPARE);
 
 }
 
@@ -230,7 +217,7 @@ void MakeActivePattern(short Pattern) {
   DisplayBackground();
   DisplaySeqNum();
 
-  DisplayTempo();
+  //DisplayTempo();
   DisplayMode();
   DisplayMode2();
   DisplayGateLength();
@@ -239,24 +226,7 @@ void MakeActivePattern(short Pattern) {
 }
 
 
-void BeatsNumber() {
-  float tmp = 0.0;
-  int i = 0;
-  for (i = 0; i < countlength; i++) {
-    if (Timers[i] >= 3) {
-      tmp = tmp  + 1.0 / (float)NoteLengths[Timers[i]];
-    } else {
-      if (Timers[i] == 1) {
-        tmp = tmp  + 4;
-      } else {
-        if (Timers[i] == 2) {
-          tmp = tmp  + 2;
-        }
-      }
-    }
-  }
-  NumberOfBeats = tmp;
-}
+
 
 void CalculateBeatCountArray() {
   short TimerCount = 0;
@@ -280,159 +250,21 @@ void CalculateBeatCountArray() {
   }
 }
 
-void SetupEncoders() {
-  pinMode(encA, INPUT);
-  pinMode(encB, INPUT);
-  pinMode(enc2A, INPUT);
-  pinMode(enc2B, INPUT);
 
-  //digitalWrite(encA, HIGH);
-  //digitalWrite(encB, HIGH);
-  //digitalWrite(enc2A, HIGH);
-  //digitalWrite(enc2B, HIGH);
-}
-
-
-void SetupOLED() {
-  _Res_Max_X = SH1106_RES_X;
-  _GRAM_Col_Start = SH1106_GRAM_COL_START;
-  _GRAM_Col_End = SH1106_GRAM_COL_END;
-  _GRAM_Page_Start = SH1106_GRAM_PAGE_START;
-  _GRAM_Page_End = SH1106_GRAM_PAGE_END;
-  _RAM_Pages = SH1106_GRAM_PAGE_END - SH1106_GRAM_PAGE_START + 1;
-
-  SPI.begin();
-
-  SPI.setBitOrder(MSBFIRST);
-  pinMode(CS_DI, OUTPUT);
-  pinMode(DC_DI, OUTPUT);
-  pinMode(RST_DI, OUTPUT);
-
-  Reset();
-  Cursor(0, 0);
-  DrawMode(NORMAL);
-  _FontType = Terminal_8pt;
-  _FontHight = Terminal_8ptFontInfo.CharacterHeight;
-  _FontDescriptor = Terminal_8ptFontInfo.Descriptors;
-  for (int x = 0; x < 128; x++) {
-    for (int y = 0; y < 64; y++) {
-      Plot(x, y);
-    }
-    Refresh();
-  }
-
-  DrawMode(CLEAR);
-  for (int x = 0; x < 128; x++) {
-    for (int y = 0; y < 64; y++) {
-      Plot(x, y);
-    }
-    Refresh();
-  }
-
-  Erase(0, 0, 128, 64);
-  Refresh();
-
-}
-
-void SetupDacs() {
-  SPI.begin();
-  SPI.setBitOrder(MSBFIRST);
-  pinMode(DAC, OUTPUT);
-
-  digitalWrite(DAC, HIGH);
-
-}
-
-void SetupSwitches() {
-  pinMode(BUT1, INPUT);
-  pinMode(BUT2, INPUT);
-  pinMode(BUT3, INPUT);
-  pinMode(BUTLED3, OUTPUT);
-  pinMode(START, INPUT);
-  pinMode(RESET, INPUT);
-  attachInterrupt(BUT1, iMode2, FALLING);
-  attachInterrupt(BUT2, iMode, FALLING);
-  attachInterrupt(BUT3, interrupt, FALLING);
-
-  attachInterrupt(START, StartInterrupt, RISING);
-
-  attachInterrupt(RESET, IntReset, RISING);
-
-  pinMode(Gate2, OUTPUT);
-  pinMode(Gate1, OUTPUT);
-}
-
-
-void flash(int n) {
-  for (int i = 0; i < n; i++) {
-    pinMode(BUTLED3, OUTPUT);
-    digitalWrite(BUTLED3, HIGH);   // turn the LED on (HIGH is the voltage level)
-    delay(500);              // wait for a second
-    digitalWrite(BUTLED3, LOW);    // turn the LED off by making the voltage LOW
-    delay(500);
-  }
-  delay(1000);
-}
-
-void SetupTimers() {
-  //These set the timer modes to be correct for accurate timing
-  // See http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/latest/lang/api/hardwaretimer.html
-  /* SequenceGateTimer.setMode(TIMER_CH2,TIMER_OUTPUT_COMPARE);
-    SequenceGateTimer.setCompare(TIMER_CH2, 1);
-    BeatTimer.setMode(TIMER_CH1,TIMER_OUTPUT_COMPARE);
-    BeatTimer.setCompare(TIMER_CH1, 1);  // Interrupt 1 count after each update
-    SequenceTimer.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-    SequenceTimer.setCompare(TIMER_CH3, 1);  // Interrupt 1 count after each update
-    BeatGateTimer.setMode(TIMER_CH4,TIMER_OUTPUT_COMPARE);
-    BeatGateTimer.setCompare(TIMER_CH4, 1);
-  
-  SequenceGateTimer.pause();
-  BeatTimer.pause();
-  SequenceTimer.pause();
-  BeatGateTimer.pause();
-  SequenceGateTimer.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-  SequenceTimer.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-  BeatTimer.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-  BeatGateTimer.setMode(TIMER_CH3, TIMER_OUTPUT_COMPARE);
-
-  */
-  //SetUpTimer(SequenceTimer, SequenceGateOn,TIMER_OUTPUT_COMPARE);
-  //SetUpTimer(SequenceGateTimer, SequenceGateOff);
-  SetUpTimer(BeatTimer,BeatGateOn,TIMER_OUTPUT_COMPARE);
-  //SetUpTimer(BeatGateTimer,BeatGateOff);
-}
 
 void setup() {
-  Serial.begin(9600);
-  SetupTimers();
-
-  ReadEEPROM();
-  setTempo(Tempo);
+  //flash(5);
   SetupOLED();
-  /*
-    SequenceTimer.attachInterrupt(1, SequenceGateOn);
-    SequenceGateTimer.attachInterrupt(2, SequenceBeatGateOff);
-    BeatTimer.attachInterrupt(3, BeatGateOn);
-    BeatGateTimer.attachInterrupt(4, BeatGateOff);
-  
- 
-  SequenceTimer.attachInterrupt(TIMER_CH1, SequenceGateOn);
-  SequenceGateTimer.attachInterrupt(TIMER_CH1, SequenceBeatGateOff);
-  BeatTimer.attachInterrupt(TIMER_CH3, BeatGateOn);
-  BeatGateTimer.attachInterrupt(TIMER_CH1, BeatGateOff);
-   */
+  ReadEEPROM();
+  SetupTimers();
+  setTempo(Tempo);
   MakeActivePattern(CurrentPattern);
-
   SetupEncoders();
   SetupDacs();
   SetupSwitches();
-  /*
-  SequenceGateTimer.setCount(0);
-  BeatGateTimer.setCount(0);
-  SequenceTimer.setCount(0);
-  BeatTimer.setCount(0);
-  */
+  SetupGates();
   digitalWrite(BUTLED3, false);
+
 
 }
 
@@ -442,167 +274,129 @@ void loop() {
   handleEnc2();
 }
 
-void StartAllTimers(){
-  /*
-  ClockStruct Clock;
-  long Time = (long)(BaseTime / NoteLengths[Timers[PlaceCount]]);
-  strcpy(Clock.Name,"Seq-i");
-  CalcPeriod(&Clock, Time, SequenceTimer);
-  SeqGateTime = Time / GateLength;
-  strcpy(Clock.Name,"Gate-i");
-  CalcPeriod(&Clock, SeqGateTime, SequenceGateTimer);
-  strcpy(Clock.Name,"Beat-i");
-  CalcPeriod(&Clock, BeatTime,BeatTimer);
-  strcpy(Clock.Name,"BeatGate-i");
-  CalcPeriod(&Clock, ms15,BeatGateTimer);
-  SequenceTimer.resume();
-  SequenceGateTimer.resume();
-  //BeatGateTimer.resume();
-  //BeatTimer.resume();
+void StartAllTimers() {
 
-  
-  SequenceTimer.pause();
-  SequenceGateTimer.pause();
-  
-  SequenceTimer.setPeriod(Time);
-  SeqGateTime = Time / GateLength;
-  SequenceGateTimer.setPeriod(SeqGateTime);
-  SequenceTimer.refresh();
-  SequenceGateTimer.refresh();
-  
-  digitalWrite(Gate2, true);
-  digitalWrite(BUTLED3, true);
-  BeatTimer.pause();
-  BeatGateTimer.pause();
-  BeatTimer.setPeriod(BeatTime);
-  BeatGateTimer.setPeriod(ms15);
-  BeatTimer.refresh();
-  BeatGateTimer.refresh();
-  BeatTimer.setCount(0);
-  BeatGateTimer.setCount(0);
-  SequenceTimer.setCount(0);
-  SequenceGateTimer.setCount(0);
-  SequenceTimer.resume();
-  SequenceGateTimer.resume();
-  BeatGateTimer.resume();
   BeatTimer.resume();
-  */
-  
+  SequenceTimer.resume();
+
 }
 
+boolean SequenceState = false;
+
+int lastLength = NoteLengths[Timers[PlaceCount]];
 void SequenceGateOn() {
-  /*
-  digitalWrite(Gate1, true);
-  ClockStruct Clock;
-  SequenceTimer.pause();
-  SequenceGateTimer.pause();
-  long Time = (long)(BaseTime / NoteLengths[Timers[PlaceCount]]);
-  SeqGateTime = Time * (GateLength/8);
-  strcpy(Clock.Name,"Seq");
-  CalcPeriod(&Clock, Time, SequenceTimer);
-  strcpy(Clock.Name,"Gate");
-  CalcPeriod(&Clock, SeqGateTime, SequenceGateTimer);
-  
-  SequenceTimer.setPeriod(Time);
-  
-  SequenceGateTimer.setPeriod(SeqGateTime);
-  SequenceTimer.refresh();
-  SequenceGateTimer.refresh();
- 
-  SequenceTimer.resume();
-  SequenceGateTimer.resume();
+  if (SequenceState == true) {
+    digitalWrite(Gate1, true);
+    //  Deal with notes
+    WriteNote(Notes[PlaceCount], Octave[PlaceCount], CV1);
 
-  //  Deal with notes
-  WriteNote(Notes[PlaceCount], Octave[PlaceCount], CV1);
+    // Display count
+    DisplayCount(PlaceCount + 1, 0, 0);
 
-  // Display count
-  DisplayCount(PlaceCount + 1, 0, 0);
+    long Time = (long)(BaseTime / NoteLengths[Timers[PlaceCount]]);
+    //DisplayCount(NoteLengths[Timers[PlaceCount]], 3,0);
+    SeqGateTime = (long)((double)Time * ((double)GateLength / 8.0));
+    CalcRatios(&SequenceClock, Time, &SequencePWMS, SeqGateTime);
+    lastLength = NoteLengths[Timers[PlaceCount]];
+    SequenceTimer.setCompare(TIMER_CH1, (SequenceClock.Arr/lastLength) / SequencePWMS.PWM1);
+    SequenceTimer.setCount(0);
+    SequenceTimer.refresh();
 
-  //Display Cursor
+    //Display Cursor
 
-  Cursor(9 * PlaceCount, 12);
-  DrawMode(INVERT);
-  _WriteChar(BLOCK);
-
-  if (ErasePos >= 0) {
-
-    Cursor(9 * ErasePos, 12);
+    Cursor(9 * PlaceCount, 12);
     DrawMode(INVERT);
     _WriteChar(BLOCK);
-  }
 
-  Refresh();
-  ErasePos++;
-  if (ErasePos >= countlength)
-    ErasePos = 0;
-  PlaceCount++;
-  if (PlaceCount >= countlength) {
-    PlaceCount = 0;
-    ErasePos = countlength - 1;
-    if ((NextPattern >= 0) && (NextPattern < 50)) {
-      MakeActivePattern(NextPattern);
-      DisplaySeqNum(CurrentPattern);
-      NextPattern = -1;
+    if (ErasePos >= 0) {
+
+      Cursor(9 * ErasePos, 12);
+      DrawMode(INVERT);
+      _WriteChar(BLOCK);
     }
+
+    Refresh();
+    ErasePos++;
+    if (ErasePos >= countlength)
+      ErasePos = 0;
+    PlaceCount++;
+    if (PlaceCount >= countlength) {
+      PlaceCount = 0;
+      ErasePos = countlength - 1;
+      if ((NextPattern >= 0) && (NextPattern < 50)) {
+        MakeActivePattern(NextPattern);
+        DisplaySeqNum(CurrentPattern);
+        NextPattern = -1;
+      }
+    }
+  } else {
+    digitalWrite(Gate1, false);
+    SequenceTimer.setCompare(TIMER_CH1, (SequenceClock.Arr/lastLength) / SequencePWMS.PWM2);
+    SequenceTimer.setCount(0);
+    SequenceTimer.refresh();
   }
- */
+  SequenceState = !SequenceState;
 }
 
+boolean BeatState = false;
+void BeatGate(void) {
+  BeatTime = 1000000L * 60 / Tempo;
 
-void BeatGateOn(void) {
-  digitalWrite(Gate2, true);
-  digitalWrite(BUTLED3, true);
-  ClockStruct Clock;
-  strcpy(Clock.Name,"Beat");
-  CalcPeriod(&Clock, BeatTime,BeatTimer);
-  strcpy(Clock.Name,"BeatGate");
-  CalcPeriod(&Clock, ms15,BeatGateTimer);
-  /*BeatTimer.pause();
-  BeatGateTimer.pause();
-  BeatTimer.setPeriod(BeatTime);
-  BeatGateTimer.setPeriod(ms15);
-  BeatTimer.refresh();
-  BeatGateTimer.refresh();
-  //BeatTimer.setCount(0);
-  //BeatGateTimer.setCount(0);
-  */
-  BeatGateTimer.resume();
-  BeatTimer.resume();
-  
-  DisplayCount(Beat, 14, 0);
-  Cursor(9 * BeatPos[Beat - 1], 16);
-  DrawMode(NORMAL);
-  _WriteChar('_' - 32);
-  bErasePos = Beat - 1;
-  if (bErasePos <= 0)
-    bErasePos = MaxBeat;
-  Cursor(9 * BeatPos[bErasePos - 1], 16);
-  DrawMode(CLEAR);
-  _WriteChar('_' - 32);
-  Refresh();
-  Beat++;
-  if (Beat > MaxBeat)
-    Beat = 1;
+  if (BeatState == true) {
+    digitalWrite(Gate2, HIGH);
+    digitalWrite(BUTLED3, HIGH);
+    BeatTimer.setCompare(TIMER_CH1, BeatClock.Arr / BeatPWMS.PWM1);
+    BeatTimer.refresh();
+
+    DisplayCount(Beat, 14, 0);
+    Cursor(9 * BeatPos[Beat - 1], 16);
+    DrawMode(NORMAL);
+    _WriteChar('_' - 32);
+    bErasePos = Beat - 1;
+    if (bErasePos <= 0)
+      bErasePos = MaxBeat;
+    Cursor(9 * BeatPos[bErasePos - 1], 16);
+    DrawMode(CLEAR);
+    _WriteChar('_' - 32);
+    Refresh();
+    Beat++;
+    if (Beat > MaxBeat)
+      Beat = 1;
+
+  } else {
+    digitalWrite(Gate2, LOW);
+    digitalWrite(BUTLED3, LOW);
+    BeatTimer.setCompare(TIMER_CH1, BeatClock.Arr / BeatPWMS.PWM2);
+    BeatTimer.refresh();
+  }
+  BeatState = !BeatState;
 
 
-}
-
-void BeatGateOff() {
-  BeatGateTimer.pause();
-  digitalWrite(Gate2, false);
-  digitalWrite(BUTLED3, false);
- 
-
-}
-void SequenceGateOff() {
-  SequenceGateTimer.pause();
-  digitalWrite(Gate1, false);
 
 }
 
 
+boolean Running = false;
+unsigned long TempoMicros = micros();
+boolean Led = false;
+unsigned long micro1 = 1000000;
 
+void StartInterrupt() {
+  StartButtonInterrupt();
 
+}
+
+void StartButtonInterrupt() {
+  digitalWrite(BUTLED3, !digitalRead(BUTLED3));
+  Running = !Running; //invert state
+
+  if (Running) {
+    Start();
+  } else {
+    Stop();
+  }
+
+}
 
 void Start() {
 
@@ -614,52 +408,13 @@ void Start() {
 
 void Stop() {
 
-  SequenceGateTimer.setCount(0);
-  SequenceGateTimer.pause();
-  BeatGateTimer.setCount(0);
-  BeatGateTimer.pause();
-  
+
+
   SequenceTimer.setCount(0);
   SequenceTimer.pause();
   BeatTimer.setCount(0);
   BeatTimer.pause();
   WriteEEProm();
-}
-
-boolean Running = false;
-unsigned long TempoMicros = micros();
-boolean Led = false;
-unsigned long micro1 = 1000000;
-
-void StartInterrupt() {
-  interrupt();
-  /*
-    noInterrupts;
-
-    unsigned long Now=micros();
-    unsigned long Diff= Now-TempoMicros ;
-    TempoMicros =Now;
-
-    int dTempo=(int)floor(60L*micro1/Diff);
-    DisplayDTempo(dTempo);
-    Led=!Led;
-    digitalWrite(BUTLED3, Led);
-    interrupts;
-  */
-}
-
-void interrupt() {
-  
-  Running = !Running; //invert state
-  if (Running) {
-    Start();
-  } else {
-    Stop();
-  }
-
-
-  //digitalWrite(LED_BUILTIN, !digitalRead(LED_BUILTIN));
-
 }
 
 void iMode() {
@@ -675,66 +430,81 @@ unsigned long currentMillis = millis();
 unsigned long previousMillis = 0;
 const long interval = 500;
 
+int TencPos;
+int SencPos;
+
 void iMode2() {
   noInterrupts();
   currentMillis = millis();
   //DisplayTime(currentMillis,previousMillis);
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
-
     if (Mode2 == 1) {
-
       NextPattern = encPos;
-      encPos = Tempo;
+      encPos = TencPos;
       Mode2 = 0;
 
-    } else {
-
+    } else { //From 0 to 1
+      TencPos=encPos;
       encPos = CurrentPattern;
       Mode2 = 1;
-
     }
-
-
     DisplayMode2();
   }
   interrupts();
 }
 
-void DisplayTime(unsigned long currentMillis, unsigned long previousMillis) {
-  int CX = 0 * 8;
-  int CY = 5 * 8;
-  Cursor(CX, CY);
-  Erase(CX, CY, CX + Width * 15, CY + Height);
-  char sTmp[6];
-  sprintf(sTmp, " %i, %i", previousMillis, currentMillis);
-  Print(sTmp);
-  Refresh();
 
+
+
+void handleEnc1() {
+
+  NewEncPos = encodeVal(encPos);
+  if (NewEncPos != encPos) {
+    switch (Mode2) {
+      case 0: encPos = NewEncPos; //Tempo
+        if (encPos < MinTempo) {
+          encPos = MinTempo;
+        }
+        if (encPos > MaxTempo ) {
+          encPos = MaxTempo;
+        }
+        setTempo(encPos);
+
+        break;
+      case 1: // Pattern select
+        encPos = NewEncPos;
+        if (encPos < 1) {
+          encPos = 0;
+        }
+        if (encPos >= NumPatterns ) {
+          encPos = NumPatterns - 1;
+        }
+        DisplaySeqNum(encPos);
+
+        break;
+      default: break;
+    }
+
+  }
 }
 
-void DisplayTime(long Time) {
-  int CX = 0 * 8;
-  int CY = 5 * 8;
-  Cursor(CX, CY);
-  Erase(CX, CY, CX + Width * 15, CY + Height);
-  char sTmp[6];
-  sprintf(sTmp, "T %i", Time);
-  Print(sTmp);
-  Refresh();
+int encodeVal(int val) {
+  encAVal = digitalRead(encA);
+  encBVal = digitalRead(encB);
+  if (encAVal != encALast) {
+    if (encAVal == encBVal) {
+      val--;
+    } else {
+      val++;
+    }
+    encALast = encAVal;
 
-}
-void DisplayMode() {
-  DisplayChar(Modes[Mode] - 32, 4, 0);
-  Refresh();
-
+  }
+  return val;
 }
 
-void DisplayMode2() {
-  DisplayChar(Modes2[Mode2] - 32, 6, 0);
-  Refresh();
 
-}
 
 
 void IntReset() {
@@ -747,7 +517,10 @@ void setTempo(int newTempo) {
   Tempo = newTempo;
   BaseTime = 1000000L * (4 * 60) / Tempo;
   BeatTime = 1000000L * 60 / Tempo;
-  DisplayTime (BeatTime );
+  //DisplayTime (BeatTime );
+  CalcTPeriod(&BeatClock, BeatTime / 2, BeatTimer, &BeatPWMS);
+  CalcTPeriod(&SequenceClock, BaseTime, SequenceTimer, &SequencePWMS, SeqGateTime);
+  DisplayTempo() ;
 }
 
 
@@ -768,51 +541,7 @@ int encodeVal2(int val) {
 }
 
 
-int encodeVal(int val) {
-  encAVal = digitalRead(encA);
-  encBVal = digitalRead(encB);
-  if (encAVal != encALast) {
-    if (encAVal == encBVal) {
-      val--;
-    } else {
-      val++;
-    }
-    encALast = encAVal;
 
-  }
-  return val;
-}
-void handleEnc1() {
-
-  NewEncPos = encodeVal(encPos);
-  if (NewEncPos != encPos) {
-    switch (Mode2) {
-      case 0: encPos = NewEncPos; //Tempo
-        if (encPos < MinTempo) {
-          encPos = MinTempo;
-        }
-        if (encPos > MaxTempo ) {
-          encPos = MaxTempo;
-        }
-        setTempo(encPos);
-        DisplayTempo() ;
-        break;
-      case 1: // Pattern select
-        encPos = NewEncPos;
-        if (encPos < 1) {
-          encPos = 0;
-        }
-        if (encPos >= NumPatterns ) {
-          encPos = NumPatterns - 1;
-        }
-        DisplaySeqNum(encPos);
-
-        break;
-      default: break;
-    }
-
-  }
-}
 
 
 void handleEnc2() {
@@ -829,8 +558,8 @@ void handleEnc2() {
           encPos2 = 8;
         }
         GateLength = encPos2;
-        SeqGateTime = BaseTime / GateLength;
-        SequenceGateTimer.setPeriod(SeqGateTime);
+        //SeqGateTime = Time * (GateLength / 8);
+        //CalcTPeriod(&SequenceClock, BaseTime, SequenceTimer, &SequencePWMS, SeqGateTime);
         DisplayGateLength() ;
         break;
       default: break;
@@ -838,123 +567,6 @@ void handleEnc2() {
   }
 }
 
-void DisplaySeqNum() {
-
-  int CX = 0 * 8;
-  int CY = 7 * 8;
-  Cursor(CX, CY);
-  Erase(CX, CY, CX + Width * 6, CY + Height);
-  char sTmp[6];
-  sprintf(sTmp, "Seq %i", CurrentPattern);
-  Print(sTmp);
-  Refresh();
-}
-
-void DisplaySeqNum(short DisplayNum) {
-
-  int CX = 0 * 8;
-  int CY = 7 * 8;
-  Cursor(CX, CY);
-  Erase(CX, CY, CX + Width * 6, CY + Height);
-  char sTmp[6];
-  sprintf(sTmp, "Seq %i", DisplayNum);
-  Print(sTmp);
-  Refresh();
-}
-
-void DisplayBeatCount() {
-  BeatsNumber();
-  int CX = Width * 7;
-  int CY = Height * 7;
-  Cursor(CX, CY);
-  Erase(CX, CY, CX + Width * 8 , CY + Height);
-  char sTmp[6];
-  sprintf(sTmp, "Beats %5.2f", NumberOfBeats);
-  Print(sTmp);
-  Refresh();
-
-}
-
-
-void DisplayChar(char C, byte x, byte y) {
-  CX = Width * x;
-  CY = Height * y;
-  noInterrupts();
-  Erase(CX, CY, CX + Width , CY + Height);
-  Cursor(CX, CY);
-
-  _WriteChar(C);
-  interrupts();
-}
-
-//Display two digit integer
-void DisplayCount(byte Count, byte x, byte y) {
-  //Count++;
-
-  byte low = 16 + Count % 10;
-  byte high = 16 + Count / 10;
-  if (high != 0) {
-    DisplayChar(high, x, y);
-  }
-  DisplayChar(low, x + 1, y);
-  Refresh();
-
-}
-
-void DisplayTempo() {
-  int CX = 8 * 8;
-  int CY = 0;
-  Cursor(CX, CY);
-  Erase(CX, CY, CX + Width * 3, CY + Height);
-  Print(Tempo);
-  Refresh();
-}
-
-void DisplayDTempo(int iTempo) {
-  int CX = 8 * 8;
-  int CY = 6 * 8;
-  Cursor(CX, CY);
-  Erase(CX, CY, CX + Width * 3, CY + Height);
-  Print(iTempo);
-  Refresh();
-}
-
-void DisplayGateLength() {
-  CX = 12 * 8;
-  Cursor(CX , CY);
-  Erase(CX , CY, CX + Width , CY + Height);
-  Print(GateLength);
-  Refresh();
-}
-
-void DisplayBackground() {
-  ClearBuffer();
-  Refresh();
-  CX = 54;
-  CY = 0;
-  Line(CX - 1, CY, CX - 1, CY + Height + 1);
-  Line(CX - 1, CY + Height + 1, 78, CY + Height + 1);
-  Line(1 + CX + Width * 3, 0, 1 + CX + Width * 3, CY + Height + 1);
-  int i = 0;
-
-  for (i = 0; i < countlength; i++) {
-    Cursor(i * 9, 12);
-    //_WriteChar('~' - 32 + Timers[i]);
-    _WriteChar((char)(cNoteLengthStart + Timers[i]));
-  }
-
-  for (i = 0; i < countlength; i++) {
-    Cursor(i * 9, 24);
-    //_WriteChar('~' - 32 + 7 + Notes[i]);
-    _WriteChar((char)(cNoteStart + Notes[i]));
-  }
-
-  for (i = 0; i < countlength; i++) {
-    Cursor(i * 9, 33);
-    _WriteChar('0' - 32 + Octave[i]);
-  }
-  DisplayBeatCount();
-}
 
 
 
@@ -995,7 +607,8 @@ void ReadEEPROM() {
   int addr = 0;
   Tempo = EEPROM.read(addr);
   if ((Tempo < 10) || (Tempo > 300))
-    setTempo(300);
+    Tempo = DefaultTempo;
+  setTempo(Tempo);
   addr = addr + 1;
   GateLength = EEPROM.read(addr);
   if (GateLength < 1)
