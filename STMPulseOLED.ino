@@ -30,7 +30,7 @@
 
 #include "HardwareTimer.h"
 #include "Setup.h"
-
+/*
 void BeatsNumber() {
   float tmp = 0.0;
   int i = 0;
@@ -49,7 +49,18 @@ void BeatsNumber() {
   }
   NumberOfBeats = tmp;
 }
+*/
 
+void BeatsNumber() {
+  float tmp = 0.0;
+  int i = 0;
+  for (i = 0; i < countlength; i++) {
+   
+      tmp = tmp  +  (float)BeatLengths[Timers[i]];
+    
+  }
+  NumberOfBeats = tmp;
+}
 #include "Display.h"
 #include <EEPROM.h>
 
@@ -217,7 +228,7 @@ void MakeActivePattern(short Pattern) {
   DisplayBackground();
   DisplaySeqNum();
 
-  //DisplayTempo();
+  DisplayTempo();
   DisplayMode();
   DisplayMode2();
   DisplayGateLength();
@@ -298,7 +309,7 @@ void SequenceGateOn() {
     SeqGateTime = (long)((double)Time * ((double)GateLength / 8.0));
     CalcRatios(&SequenceClock, Time, &SequencePWMS, SeqGateTime);
     lastLength = NoteLengths[Timers[PlaceCount]];
-    SequenceTimer.setCompare(TIMER_CH1, (SequenceClock.Arr/lastLength) / SequencePWMS.PWM1);
+    SequenceTimer.setCompare(TIMER_CH1, (SequenceClock.Arr / lastLength) / SequencePWMS.PWM1);
     SequenceTimer.setCount(0);
     SequenceTimer.refresh();
 
@@ -331,7 +342,7 @@ void SequenceGateOn() {
     }
   } else {
     digitalWrite(Gate1, false);
-    SequenceTimer.setCompare(TIMER_CH1, (SequenceClock.Arr/lastLength) / SequencePWMS.PWM2);
+    SequenceTimer.setCompare(TIMER_CH1, (SequenceClock.Arr / lastLength) / SequencePWMS.PWM2);
     SequenceTimer.setCount(0);
     SequenceTimer.refresh();
   }
@@ -430,8 +441,8 @@ unsigned long currentMillis = millis();
 unsigned long previousMillis = 0;
 const long interval = 500;
 
-int TencPos;
-int SencPos;
+
+int SencPos= CurrentPattern;
 
 void iMode2() {
   noInterrupts();
@@ -440,13 +451,15 @@ void iMode2() {
   if (currentMillis - previousMillis >= interval) {
     previousMillis = currentMillis;
     if (Mode2 == 1) {
-      NextPattern = encPos;
-      encPos = TencPos;
+      NextPattern = SencPos;
+      //encPos = TencPos;
+       DisplaySeqNum(NewEncPos);
+       DisplayTempo();
       Mode2 = 0;
 
     } else { //From 0 to 1
-      TencPos=encPos;
-      encPos = CurrentPattern;
+      //TencPos=encPos;
+      SencPos = CurrentPattern;
       Mode2 = 1;
     }
     DisplayMode2();
@@ -458,35 +471,37 @@ void iMode2() {
 
 
 void handleEnc1() {
-
-  NewEncPos = encodeVal(encPos);
-  if (NewEncPos != encPos) {
-    switch (Mode2) {
-      case 0: encPos = NewEncPos; //Tempo
-        if (encPos < MinTempo) {
-          encPos = MinTempo;
-        }
-        if (encPos > MaxTempo ) {
-          encPos = MaxTempo;
-        }
-        setTempo(encPos);
-
-        break;
-      case 1: // Pattern select
-        encPos = NewEncPos;
-        if (encPos < 1) {
-          encPos = 0;
-        }
-        if (encPos >= NumPatterns ) {
-          encPos = NumPatterns - 1;
-        }
-        DisplaySeqNum(encPos);
-
-        break;
-      default: break;
-    }
-
+  switch (Mode2) {
+    
+    case 0:
+      NewEncPos = encodeVal(Tempo);
+      if (NewEncPos != Tempo) {
+        if (NewEncPos < MinTempo) {
+            NewEncPos = MinTempo;
+          }
+          if (NewEncPos > MaxTempo ) {
+            NewEncPos = MaxTempo;
+          }
+          setTempo(NewEncPos);
+      }
+      break;
+    case 1:
+    NewEncPos = encodeVal(SencPos);
+      if (NewEncPos != SencPos) {
+        if (NewEncPos < 1) {
+            NewEncPos = 0;
+          }
+          if (NewEncPos >= NumPatterns ) {
+            NewEncPos = NumPatterns - 1;
+          }
+          DisplaySeqNum(NewEncPos);
+          SencPos=NewEncPos;  // will be set to next pattern when mode changes
+      }
+      break;
+    default: break;
   }
+
+  
 }
 
 int encodeVal(int val) {
@@ -503,8 +518,6 @@ int encodeVal(int val) {
   }
   return val;
 }
-
-
 
 
 void IntReset() {

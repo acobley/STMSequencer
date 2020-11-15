@@ -44,6 +44,7 @@ short Volume[MaxPatternLength] ;
 int countlength = sizeof(Notes) / sizeof(short);
 
 const short NoteLengths[6] = {0, 1, 2, 4, 8, 16};
+const float BeatLengths[6] = {0, 4, 2, 1, 0.5, 0.25};
 const short NumPatterns = 7;
 
 long ClockF = 72000000;
