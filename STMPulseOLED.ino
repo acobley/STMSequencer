@@ -15,7 +15,7 @@
   LACK OF NEGLIGENCE. HOBBY COMPONENTS SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE
   FOR ANY DAMAGES INCLUDING, BUT NOT LIMITED TO, SPECIAL, INCIDENTAL OR
   CONSEQUENTIAL DAMAGES FOR ANY REASON WHATSOEVER.
-
+ 
 
 
 */
@@ -107,6 +107,18 @@ short TripletPatterns[ NumPatterns][MaxPatternLength] = {
   {0, 0, 0, 0, 0},
   {0, 0, 0, 0},
 };
+
+short DottedPatterns[ NumPatterns][MaxPatternLength] = {
+
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0, 0},
+  {0, 0, 0, 0},
+  {0, 0, 0, 0, 0},
+  {0, 0, 0, 0},
+  {0, 0, 0, 0, 0},
+  {0, 0, 0, 0},
+};
+
 short VolumePatterns[ NumPatterns][MaxPatternLength] = {
 
   {0, 0, 1, 1, 1, 1, 1, 1, 1, 1, 1, 0, 0},
@@ -247,7 +259,7 @@ void CalculateBeatCountArray() {
   int countlength = PatternLengths[CurrentPattern];
   for (TimerCount = 1; TimerCount < countlength; TimerCount++) {
 
-    CurrentBeatLength = CurrentBeatLength + (float) (1 / (float) NoteLengths[Timers[TimerCount - 1]]);
+    CurrentBeatLength = CurrentBeatLength + (float)BeatLengths[Timers[TimerCount]];
 
     if ((CurrentBeatLength == (float)round(CurrentBeatLength))) {
       calcBeatPos[BeatCount] = TimerCount;
@@ -289,10 +301,11 @@ void StartAllTimers() {
 
   BeatTimer.resume();
   SequenceTimer.resume();
+  SequenceGateOn();
 
 }
 
-boolean SequenceState = false;
+boolean SequenceState = true;
 
 int lastLength = NoteLengths[Timers[PlaceCount]];
 void SequenceGateOn() {
@@ -410,17 +423,10 @@ void StartButtonInterrupt() {
 }
 
 void Start() {
-
-  //Stop();
   StartAllTimers();
-  //SequenceGateOn();
-  //BeatGateOn();
 }
 
 void Stop() {
-
-
-
   SequenceTimer.setCount(0);
   SequenceTimer.pause();
   BeatTimer.setCount(0);
