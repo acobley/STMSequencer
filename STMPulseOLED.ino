@@ -427,6 +427,8 @@ void Start() {
 }
 
 void Stop() {
+  digitalWrite(Gate1, false); //Avoid stuck notes
+  digitalWrite(Gate2, false);
   SequenceTimer.setCount(0);
   SequenceTimer.pause();
   BeatTimer.setCount(0);
