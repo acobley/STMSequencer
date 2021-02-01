@@ -11,7 +11,7 @@ void DisplayChar(char C, byte x, byte y) {
 }
 
 void DisplayTime(unsigned long currentMillis, unsigned long previousMillis, int Row) {
-  return; // Remove for Debug
+  //return; // Remove for Debug
   int CX = 0 * 8;
   int CY = Row * 8;
   Cursor(CX, CY);
@@ -24,13 +24,13 @@ void DisplayTime(unsigned long currentMillis, unsigned long previousMillis, int 
 }
 
 void DisplayTime(long Time, int Row) {
-  return; // Remove for Debug
-  int CX = 0 * 8;
+  //return; // Remove for Debug
+  int CX = 5 * 8;
   int CY = Row * 8;
   Cursor(CX, CY);
   Erase(CX, CY, CX + Width * 15, CY + Height);
   char sTmp[6];
-  sprintf(sTmp, "T %i", Time);
+  sprintf(sTmp, "%i", Time);
   Print(sTmp);
   Refresh();
 

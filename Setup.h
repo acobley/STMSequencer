@@ -29,9 +29,28 @@ byte Mode2 = 0;
 int encAVal, encALast, encBVal;
 int encAVal2, encALast2, encBVal2;
 
-HardwareTimer SequenceTimer(2);
+HardwareTimer MainTimer(1);
 
-HardwareTimer BeatTimer(4);
+long ClockF = 72000000;
+struct ClockStruct {
+  char Name[15];
+  long Psc = 0;
+  long Arr = 0;
+};
+
+struct PWMStruct{
+ long PWM1=1;
+ long PWM2=1;
+ long PWM1Counter=0;
+ long PWM2Counter=0;
+ boolean Phase=0;
+};
+
+ClockStruct MainClock;
+PWMStruct BeatPWMS;
+
+PWMStruct SequencePWMS;
+ClockStruct SequenceClock;
 
 
 const short MaxPatternLength = 16;
@@ -47,22 +66,8 @@ const short NoteLengths[6] = {0, 1, 2, 4, 8, 16};
 const float BeatLengths[6] = {0, 4, 2, 1, 0.5, 0.25};
 const short NumPatterns = 7;
 
-long ClockF = 72000000;
-struct ClockStruct {
-  char Name[15];
-  int Psc = 0;
-  int Arr = 0;
-};
 
-struct PWMStruct {
-  double PWM1 = 1;
-  double PWM2 = 1;
-};
 
-PWMStruct BeatPWMS;
-ClockStruct BeatClock;
-PWMStruct SequencePWMS;
-ClockStruct SequenceClock;
 
 
 const int DefaultTempo=120;
@@ -178,11 +183,4 @@ void SetupDacs() {
 void SetupGates() {
   pinMode(Gate2, OUTPUT);
   pinMode(Gate1, OUTPUT);
-}
-
-void SetUpTimer(HardwareTimer myTimer, voidFuncPtr handler, timer_mode tm) {
-  myTimer.pause();
-  myTimer.setMode(TIMER_CH1, tm);
-  myTimer.attachInterrupt(TIMER_CH1, handler);
-
 }

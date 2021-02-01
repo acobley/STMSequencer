@@ -15,7 +15,7 @@
   LACK OF NEGLIGENCE. HOBBY COMPONENTS SHALL NOT, IN ANY CIRCUMSTANCES, BE LIABLE
   FOR ANY DAMAGES INCLUDING, BUT NOT LIMITED TO, SPECIAL, INCIDENTAL OR
   CONSEQUENTIAL DAMAGES FOR ANY REASON WHATSOEVER.
- 
+
 
 
 */
@@ -31,7 +31,7 @@
 #include "HardwareTimer.h"
 #include "Setup.h"
 /*
-void BeatsNumber() {
+  void BeatsNumber() {
   float tmp = 0.0;
   int i = 0;
   for (i = 0; i < countlength; i++) {
@@ -48,16 +48,16 @@ void BeatsNumber() {
     }
   }
   NumberOfBeats = tmp;
-}
+  }
 */
 
 void BeatsNumber() {
   float tmp = 0.0;
   int i = 0;
   for (i = 0; i < countlength; i++) {
-   
-      tmp = tmp  +  (float)BeatLengths[Timers[i]];
-    
+
+    tmp = tmp  +  (float)BeatLengths[Timers[i]];
+
   }
   NumberOfBeats = tmp;
 }
@@ -139,64 +139,40 @@ short VolumePatterns[ NumPatterns][MaxPatternLength] = {
 double Div = 1 / 72.0;
 double PWM1 = 1;
 double PWM2 = 1;
-void CalcTPeriod(ClockStruct *Clock, long Period, HardwareTimer myTimer, PWMStruct *PWMS) {
+//This one used for Beat Timer
+void CalcTCounters( long Time, HardwareTimer myTimer,PWMStruct *PWMS,long Pm1) {
 
+  PWMS->PWM1=Pm1/50;
+  PWMS->PWM2=(Time-Pm1)/50;
+  DisplayTime(Time,3);
+  DisplayTime(Pm1,4);
+  DisplayTime(PWMS->PWM1,5);
+  DisplayTime(PWMS->PWM2,6);
+
+
+
+}
+
+void SetUpTimer(ClockStruct *Clock,HardwareTimer myTimer, voidFuncPtr handler, timer_mode tm) {
+  long Time=50L;
+  myTimer.pause();
+  myTimer.setMode(TIMER_CH1, tm);
+  myTimer.attachInterrupt(TIMER_CH1, handler);
   Clock->Psc = 1;
   Clock->Arr = 0;
-  Clock->Arr = Period / (Div * Clock->Psc);
+  Clock->Arr = Time/(Div*Clock->Psc);
   while (Clock->Arr >= 65535) {
     Clock->Psc = Clock->Psc + 1;
-    Clock->Arr = Period / (Div * Clock->Psc);
+    Clock->Arr = Time/(Div*Clock->Psc);
 
   }
   myTimer.setPrescaleFactor(Clock->Psc);
-  myTimer.setOverflow(Clock->Arr);
-
-  PWMS->PWM1 = (double)((double)Period / (double)15000L);
-  PWMS->PWM2 = (double)((double)Period / (double)(Period - 15000L));
-  //myTimer.setCompare(TIMER_CH1, Clock->Arr / PWMS->PWM1);
+  myTimer.setOverflow(Clock->Arr-1);
+  myTimer.setCompare(TIMER_CH1,Clock->Arr-1);
   myTimer.refresh();
 
-  //DisplayTime(Period,4);
-  //DisplayTime(Clock->Psc,Clock->Arr,5);
-  //DisplayTime(Clock->Arr / PWMS->PWM1, Clock->Arr / PWMS->PWM2,6);
-
 }
 
-void CalcTPeriod(ClockStruct *Clock, long Period, HardwareTimer myTimer, PWMStruct *PWMS, long onTime) {
-
-  Clock->Psc = 1;
-  Clock->Arr = 0;
-  Clock->Arr = Period / (Div * Clock->Psc);
-  while (Clock->Arr >= 65535) {
-    Clock->Psc = Clock->Psc + 1;
-    Clock->Arr = Period / (Div * Clock->Psc);
-
-  }
-  myTimer.setPrescaleFactor(Clock->Psc);
-  myTimer.setOverflow(Clock->Arr);
-
-  PWMS->PWM1 = (double)((double)Period / (double)onTime);
-  PWMS->PWM2 = (double)((double)Period / (double)(Period - onTime));
-  //myTimer.setCompare(TIMER_CH1, Clock->Arr / PWMS->PWM1);
-  myTimer.refresh();
-
-  DisplayTime(Period, 4);
-  DisplayTime(Clock->Psc, Clock->Arr, 5);
-  DisplayTime(Clock->Arr / PWMS->PWM1, Clock->Arr / PWMS->PWM2, 6);
-
-}
-
-void CalcRatios(ClockStruct *Clock, long Period, PWMStruct *PWMS, long onTime) {
-
-  PWMS->PWM1 = (double)((double)Period / (double)onTime);
-  PWMS->PWM2 = (double)((double)Period / (double)(Period - onTime));
-  //myTimer.setCompare(TIMER_CH1, Clock->Arr / PWMS->PWM1);
-  DisplayTime(Period, onTime, 4);
-  DisplayTime(Clock->Psc, Clock->Arr, 5);
-  DisplayTime(Clock->Arr / PWMS->PWM1, Clock->Arr / PWMS->PWM2, 6);
-
-}
 
 void SetupSwitches() {
   pinMode(BUT1, INPUT);
@@ -217,8 +193,13 @@ void SetupTimers() {
   //These set the timer modes to be correct for accurate timing
   // See http://docs.leaflabs.com/static.leaflabs.com/pub/leaflabs/maple-docs/latest/lang/api/hardwaretimer.html
 
-  SetUpTimer(SequenceTimer, SequenceGateOn, TIMER_OUTPUT_COMPARE);
-  SetUpTimer(BeatTimer, BeatGate, TIMER_OUTPUT_COMPARE);
+  //SetUpTimer(SequenceTimer, SequenceGateOn, TIMER_OUTPUT_COMPARE);
+  SetUpTimer(&MainClock,MainTimer, MasterClockInterrupt, TIMER_OUTPUT_COMPARE);
+  setTempo(Tempo);  //Will also calculate timers.
+  BeatPWMS.PWM1Counter=0;
+  BeatPWMS.PWM2Counter=0;
+  BeatPWMS.Phase=0;
+  MainTimer.resume();
 
 }
 
@@ -297,11 +278,17 @@ void loop() {
   handleEnc2();
 }
 
+boolean T1State = false;
+void MasterClockInterrupt(){
+  digitalWrite(Gate1, T1State);
+  BeatGate();
+  T1State = !T1State;
+}
+
 void StartAllTimers() {
 
-  BeatTimer.resume();
-  SequenceTimer.resume();
-  SequenceGateOn();
+
+  //SequenceGateOn();
 
 }
 
@@ -320,11 +307,8 @@ void SequenceGateOn() {
     long Time = (long)(BaseTime / NoteLengths[Timers[PlaceCount]]);
     //DisplayCount(NoteLengths[Timers[PlaceCount]], 3,0);
     SeqGateTime = (long)((double)Time * ((double)GateLength / 8.0));
-    CalcRatios(&SequenceClock, Time, &SequencePWMS, SeqGateTime);
+    CalcTCounters(Time, MainTimer,  &SequencePWMS, SeqGateTime);
     lastLength = NoteLengths[Timers[PlaceCount]];
-    SequenceTimer.setCompare(TIMER_CH1, (SequenceClock.Arr / lastLength) / SequencePWMS.PWM1);
-    SequenceTimer.setCount(0);
-    SequenceTimer.refresh();
 
     //Display Cursor
 
@@ -355,47 +339,72 @@ void SequenceGateOn() {
     }
   } else {
     digitalWrite(Gate1, false);
-    SequenceTimer.setCompare(TIMER_CH1, (SequenceClock.Arr / lastLength) / SequencePWMS.PWM2);
-    SequenceTimer.setCount(0);
-    SequenceTimer.refresh();
+
   }
   SequenceState = !SequenceState;
 }
 
 boolean BeatState = false;
+boolean BeatDispDivisor = false;
+
+
 void BeatGate(void) {
+if (BeatPWMS.Phase==0){ //first phase;
+   digitalWrite(BUTLED3, HIGH);
+     digitalWrite(Gate2,HIGH);
+     BeatPWMS.PWM1Counter++;
+     if (BeatPWMS.PWM1Counter>BeatPWMS.PWM1){
+        BeatPWMS.Phase=1;
+        BeatPWMS.PWM2Counter=1;
+        digitalWrite(Gate2,LOW);
+     }
+  }else{
+     digitalWrite(BUTLED3, LOW);
+     digitalWrite(Gate2,LOW);
+     BeatPWMS.PWM2Counter++;
+     if (BeatPWMS.PWM2Counter>BeatPWMS.PWM2){
+        BeatPWMS.Phase=0;
+        digitalWrite(Gate2,HIGH);
+        BeatPWMS.PWM1Counter=1;
+     }
+  }
+
+/*
+
   BeatTime = 1000000L * 60 / Tempo;
 
   if (BeatState == true) {
+
+
     digitalWrite(Gate2, HIGH);
-    digitalWrite(BUTLED3, HIGH);
-    BeatTimer.setCompare(TIMER_CH1, BeatClock.Arr / BeatPWMS.PWM1);
-    BeatTimer.refresh();
 
-    DisplayCount(Beat, 14, 0);
-    Cursor(9 * BeatPos[Beat - 1], 16);
-    DrawMode(NORMAL);
-    _WriteChar('_' - 32);
-    bErasePos = Beat - 1;
-    if (bErasePos <= 0)
-      bErasePos = MaxBeat;
-    Cursor(9 * BeatPos[bErasePos - 1], 16);
-    DrawMode(CLEAR);
-    _WriteChar('_' - 32);
-    Refresh();
-    Beat++;
-    if (Beat > MaxBeat)
-      Beat = 1;
-
+    if  (BeatDispDivisor != false) { //The Beat clock runs at 2* for Volcas
+      digitalWrite(BUTLED3, HIGH);
+      DisplayCount(Beat, 14, 0);
+      Cursor(9 * BeatPos[Beat - 1], 16);
+      DrawMode(NORMAL);
+      _WriteChar('_' - 32);
+      bErasePos = Beat - 1;
+      if (bErasePos <= 0)
+        bErasePos = MaxBeat;
+      Cursor(9 * BeatPos[bErasePos - 1], 16);
+      DrawMode(CLEAR);
+      _WriteChar('_' - 32);
+      Refresh();
+      Beat++;
+      if (Beat > MaxBeat)
+        Beat = 1;
+    }
+    BeatDispDivisor = !BeatDispDivisor;
   } else {
     digitalWrite(Gate2, LOW);
+
     digitalWrite(BUTLED3, LOW);
-    BeatTimer.setCompare(TIMER_CH1, BeatClock.Arr / BeatPWMS.PWM2);
-    BeatTimer.refresh();
+
   }
   BeatState = !BeatState;
 
-
+*/
 
 }
 
@@ -429,10 +438,13 @@ void Start() {
 void Stop() {
   digitalWrite(Gate1, false); //Avoid stuck notes
   digitalWrite(Gate2, false);
+  digitalWrite(BUTLED3, false);
+  /*
   SequenceTimer.setCount(0);
   SequenceTimer.pause();
   BeatTimer.setCount(0);
   BeatTimer.pause();
+  */
   WriteEEProm();
 }
 
@@ -450,7 +462,7 @@ unsigned long previousMillis = 0;
 const long interval = 500;
 
 
-int SencPos= CurrentPattern;
+int SencPos = CurrentPattern;
 
 void iMode2() {
   noInterrupts();
@@ -461,8 +473,8 @@ void iMode2() {
     if (Mode2 == 1) {
       NextPattern = SencPos;
       //encPos = TencPos;
-       DisplaySeqNum(NewEncPos);
-       DisplayTempo();
+      DisplaySeqNum(NewEncPos);
+      DisplayTempo();
       Mode2 = 0;
 
     } else { //From 0 to 1
@@ -480,36 +492,36 @@ void iMode2() {
 
 void handleEnc1() {
   switch (Mode2) {
-    
+
     case 0:
       NewEncPos = encodeVal(Tempo);
       if (NewEncPos != Tempo) {
         if (NewEncPos < MinTempo) {
-            NewEncPos = MinTempo;
-          }
-          if (NewEncPos > MaxTempo ) {
-            NewEncPos = MaxTempo;
-          }
-          setTempo(NewEncPos);
+          NewEncPos = MinTempo;
+        }
+        if (NewEncPos > MaxTempo ) {
+          NewEncPos = MaxTempo;
+        }
+        setTempo(NewEncPos);
       }
       break;
     case 1:
-    NewEncPos = encodeVal(SencPos);
+      NewEncPos = encodeVal(SencPos);
       if (NewEncPos != SencPos) {
         if (NewEncPos < 1) {
-            NewEncPos = 0;
-          }
-          if (NewEncPos >= NumPatterns ) {
-            NewEncPos = NumPatterns - 1;
-          }
-          DisplaySeqNum(NewEncPos);
-          SencPos=NewEncPos;  // will be set to next pattern when mode changes
+          NewEncPos = 0;
+        }
+        if (NewEncPos >= NumPatterns ) {
+          NewEncPos = NumPatterns - 1;
+        }
+        DisplaySeqNum(NewEncPos);
+        SencPos = NewEncPos; // will be set to next pattern when mode changes
       }
       break;
     default: break;
   }
 
-  
+
 }
 
 int encodeVal(int val) {
@@ -539,8 +551,8 @@ void setTempo(int newTempo) {
   BaseTime = 1000000L * (4 * 60) / Tempo;
   BeatTime = 1000000L * 60 / Tempo;
   //DisplayTime (BeatTime );
-  CalcTPeriod(&BeatClock, BeatTime / 2, BeatTimer, &BeatPWMS);
-  CalcTPeriod(&SequenceClock, BaseTime, SequenceTimer, &SequencePWMS, SeqGateTime);
+  CalcTCounters(BeatTime / 2,  MainTimer, &BeatPWMS,(long)15000);
+  //CalcTCounters(BaseTime, MainTimer, &SequencePWMS, SeqGateTime);
   DisplayTempo() ;
 }
 
